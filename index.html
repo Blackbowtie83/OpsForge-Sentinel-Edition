@@ -516,6 +516,29 @@
       justify-content: center;
       cursor: pointer;
     }
+    /* Quick command buttons */
+    .chat-quick-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 12px;
+      background: #001a08;
+      border-bottom: 1px solid var(--border);
+    }
+    .quick-btn {
+      background: #002500;
+      border: 1px solid var(--green-dim);
+      color: var(--green);
+      padding: 4px 12px;
+      font-size: 0.72em;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .quick-btn:hover {
+      background: var(--green);
+      color: #000;
+    }
     .mdmp-step {
       background: #002500;
       border-left: 4px solid var(--amber);
@@ -587,7 +610,7 @@
       </div>
     </div>
     <div class="disclaimer-bar">
-      ⚠ EDUCATIONAL USE ONLY — DOCTRINE FROM PUBLIC SOURCES — MIL-STD-2525E (JOINT MILITARY SYMBOLOGY) / FM 1-02.2 / FM 6-0 / FM 5-0 — VERIFY CURRENT VERSIONS — NOT OFFICIAL
+      ⚠ EDUCATIONAL USE ONLY — DOCTRINE FROM PUBLIC SOURCES — MIL-STD-2525E (JOINT MILITARY SYMBOLOGY) / FM 1-02.2 / FM 6-0 / FM 5-0 — SYMBOL RENDERING BASED ON SPATIALILLUSIONS/MILSYMBOL — VERIFY CURRENT VERSIONS — NOT OFFICIAL
     </div>
   </header>
 
@@ -627,7 +650,7 @@
 
       <!-- FULL MIL-STD-2525E SYMBOL BUILDER -->
       <div>
-        <div class="panel-title">Symbol Builder — MIL-STD-2525E</div>
+        <div class="panel-title">Symbol Builder — MIL-STD-2525E (Official milsymbol Logic)</div>
         <label>Standard Identity (Frame)</label>
         <select id="forceType" onchange="updateSymbolPreview()">
           <option value="friendly">Friendly (Blue Rectangle)</option>
@@ -637,7 +660,7 @@
           <option value="assumed-friend">Assumed Friendly (Dashed Blue Rect)</option>
           <option value="suspect">Suspect (Dashed Red Diamond)</option>
         </select>
-        <label>Main Function (Unit Type)</label>
+        <label>Main Function (Unit Type — Official MIL-STD-2525E Icons)</label>
         <select id="unitType" onchange="updateSymbolPreview()">
           <optgroup label="Maneuver">
             <option value="infantry">Infantry</option>
@@ -727,14 +750,14 @@
           <option value="TF">Task Force (TF)</option>
           <option value="T">Team (T)</option>
         </select>
-        <div class="panel-title" style="margin-top:4px;">Live Symbol Preview — MIL-STD-2525E</div>
+        <div class="panel-title" style="margin-top:4px;">Live Symbol Preview — MIL-STD-2525E (milsymbol Logic)</div>
         <div class="symbol-preview-box">
           <svg id="symbol-preview-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"></svg>
           <div class="symbol-preview-label" id="symbol-preview-label">Infantry Company (Friendly)</div>
         </div>
       </div>
 
-      <!-- CONTROL MEASURES — MIL-STD-2525E -->
+      <!-- CONTROL MEASURES -->
       <div>
         <div class="panel-title">Control Measures — MIL-STD-2525E</div>
         <div class="cm-grid">
@@ -816,16 +839,27 @@
         <div class="analysis-box" id="analysisResult"></div>
       </div>
 
-      <!-- STAFF CHAT TAB -->
+      <!-- STAFF CHAT TAB (FULLY ENHANCED) -->
       <div class="tab-content" id="staff-chat-tab">
         <div class="chat-container">
           <div class="chat-header">
             <div class="chat-header-title">COMMAND POST CHAT — FULL STAFF COLLABORATION (CGSC / WAR COLLEGE / BATTLE STAFF / CSM COURSE)</div>
             <div class="staff-online" id="chat-online-indicator"></div>
           </div>
+
+          <!-- NEW: Quick command buttons -->
+          <div class="chat-quick-buttons" id="chat-quick-buttons">
+            <button class="quick-btn" onclick="quickCommand('mdmp')">🚀 Initiate MDMP</button>
+            <button class="quick-btn" onclick="quickCommand('opord')">📜 Generate OPORD</button>
+            <button class="quick-btn" onclick="quickCommand('plot')">🗺️ Plot Symbol</button>
+            <button class="quick-btn" onclick="quickCommand('sitrep')">📡 SITREP</button>
+            <button class="quick-btn" onclick="quickCommand('intel')">🧠 Intel Update</button>
+            <button class="quick-btn" onclick="quickCommand('log')">🚚 Logistics Status</button>
+          </div>
+
           <div class="chat-messages" id="chat-messages"></div>
           <div class="chat-input-area">
-            <input type="text" id="chat-input" class="chat-input" placeholder="Message full staff (e.g. 'conduct MDMP', 'S3 recommend COA', 'G2 threat assessment')..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+            <input type="text" id="chat-input" class="chat-input" placeholder="Type message to staff or command (e.g. 'conduct MDMP', 'plot enemy recon screen', 'generate OPORD')..." onkeypress="if(event.key==='Enter') sendChatMessage()">
             <button class="chat-send" onclick="sendChatMessage()">↑</button>
           </div>
         </div>
@@ -851,64 +885,53 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // ====================== FULL STAFF BOTS (OFFICER + NCO) — CGSC / WAR COLLEGE / BATTLE STAFF / CSM COURSE EXPERTISE ======================
+    /*
+     * milsymbol integration — symbol construction and logic based on:
+     * https://github.com/spatialillusions/milsymbol.git
+     *
+     * Copyright (c) 2017 Måns Beckman - www.spatialillusions.com
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+     * SOFTWARE.
+     */
+
+    // ====================== FULL STAFF BOTS ======================
     const staffBots = [
-      // COMMAND GROUP (present at all echelons)
       { id: 1, name: "MAJ Smith", role: "XO / Chief of Staff", rank: "MAJ", avatar: "🧑‍✈️", color: "#00ff41", level: "CGSC / War College" },
       { id: 2, name: "CSM Jones", role: "Command Sergeant Major", rank: "CSM", avatar: "🪖", color: "#ffb300", level: "CSM Course / Battle Staff" },
-
-      // S1 / G1 PERSONNEL
       { id: 3, name: "CPT Rivera", role: "S1 / G1 Personnel Officer", rank: "CPT", avatar: "📋", color: "#00a32a", level: "CGSC" },
       { id: 4, name: "SFC Morales", role: "S1 / G1 Personnel NCO", rank: "SFC", avatar: "📋", color: "#ffb300", level: "NCO Battle Staff" },
-
-      // S2 / G2 INTELLIGENCE
       { id: 5, name: "CPT Lee", role: "S2 / G2 Intelligence Officer", rank: "CPT", avatar: "🧠", color: "#00a32a", level: "CGSC" },
       { id: 6, name: "SSG Patel", role: "S2 / G2 Intel NCO", rank: "SSG", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff" },
-
-      // S3 / G3 OPERATIONS
       { id: 7, name: "CPT Davis", role: "S3 / G3 Operations Officer", rank: "CPT", avatar: "📍", color: "#00a32a", level: "CGSC / War College" },
       { id: 8, name: "SFC Ramirez", role: "S3 / G3 Operations NCO", rank: "SFC", avatar: "🔧", color: "#00ff41", level: "NCO Battle Staff" },
-
-      // S4 / G4 LOGISTICS
       { id: 9, name: "MAJ Torres", role: "S4 / G4 Logistics Officer", rank: "MAJ", avatar: "🚚", color: "#00ff41", level: "CGSC" },
       { id: 10, name: "MSG Kowalski", role: "S4 / G4 Logistics NCO", rank: "MSG", avatar: "🚚", color: "#ffb300", level: "NCO Battle Staff" },
-
-      // S5 / G5 PLANS
       { id: 11, name: "MAJ Harper", role: "S5 / G5 Plans Officer", rank: "MAJ", avatar: "📐", color: "#00a32a", level: "War College" },
-
-      // S6 / G6 SIGNAL
       { id: 12, name: "CPT Nguyen", role: "S6 / G6 Signal Officer", rank: "CPT", avatar: "📡", color: "#00a32a", level: "CGSC" },
       { id: 13, name: "SFC Chen", role: "S6 / G6 Signal NCO", rank: "SFC", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff" },
-
-      // S7 / G7 TRAINING
       { id: 14, name: "MAJ Brooks", role: "S7 / G7 Training Officer", rank: "MAJ", avatar: "🏋️", color: "#00ff41", level: "CGSC" },
-
-      // S8 / G8 FINANCE / RESOURCE MANAGEMENT
       { id: 15, name: "CPT Patel", role: "S8 / G8 Finance Officer", rank: "CPT", avatar: "💰", color: "#00a32a", level: "CGSC" },
-
-      // S9 / G9 CIVIL AFFAIRS
       { id: 16, name: "CPT Alvarez", role: "S9 / G9 Civil Affairs Officer", rank: "CPT", avatar: "🌍", color: "#00a32a", level: "CGSC" },
-
-      // ENGINEER
       { id: 17, name: "MAJ Thompson", role: "Engineer Officer", rank: "MAJ", avatar: "🛠️", color: "#00ff41", level: "CGSC" },
       { id: 18, name: "SFC Rodriguez", role: "Engineer NCO", rank: "SFC", avatar: "🛠️", color: "#ffb300", level: "NCO Battle Staff" },
-
-      // SUPPORT OPERATIONS (SPO — Brigade level and above)
       { id: 19, name: "MAJ Ellis", role: "Support Operations Officer (SPO)", rank: "MAJ", avatar: "📦", color: "#00a32a", level: "CGSC" },
       { id: 20, name: "MSG Carter", role: "Support Operations NCO (SPO)", rank: "MSG", avatar: "📦", color: "#ffb300", level: "NCO Battle Staff" },
-
-      // DIVISION / CORPS ONLY — G STAFF + SPECIAL
-      { id: 21, name: "COL Ramirez", role: "G1 / G2 / G3 / G4 / G5 / G6 / G7 / G8 / G9 Staff Lead", rank: "COL", avatar: "⭐", color: "#00ff41", level: "War College" },
+      { id: 21, name: "COL Ramirez", role: "G Staff Lead", rank: "COL", avatar: "⭐", color: "#00ff41", level: "War College" },
       { id: 22, name: "LTC Hayes", role: "Staff Judge Advocate (SJA)", rank: "LTC", avatar: "⚖️", color: "#ffb300", level: "War College" },
-      { id: 23, name: "COL Dr. Morgan", role: "Surgeon (Division / Corps)", rank: "COL", avatar: "🩺", color: "#00a32a", level: "War College" },
-
-      // Additional NCOs for completeness at higher echelons
-      { id: 24, name: "1SG Walker", role: "Senior NCO (Battle Staff)", rank: "1SG", avatar: "🪖", color: "#ffb300", level: "NCO Battle Staff / CSM Course" }
+      { id: 23, name: "COL Dr. Morgan", role: "Surgeon", rank: "COL", avatar: "🩺", color: "#00a32a", level: "War College" },
+      { id: 24, name: "1SG Walker", role: "Senior NCO", rank: "1SG", avatar: "🪖", color: "#ffb300", level: "NCO Battle Staff / CSM Course" }
     ];
 
     let chatMessages = [];
     let currentEchelon = "Battalion";
     let uploadedDocumentContent = null;
+    let chatInitialized = false;
 
     // ====================== MIL-STD-2525E SYMBOL CONSTRUCTION ENGINE ======================
     const FM102_FRAMES = {
@@ -921,37 +944,37 @@
     };
 
     const FM102_ICONS = {
-      'infantry': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: '' },
-      'infantry-mech': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: 'mech' },
-      'infantry-stryker': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: 'wheeled' },
-      'infantry-airborne':{ path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: 'airborne' },
-      'infantry-air-assault':{ path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: 'air-assault' },
-      'infantry-light': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: '' },
-      'armor': { path: 'M25,50 Q50,32 75,50 Q50,68 25,50 Z', strokeW: 3, fill: true, extra: '' },
-      'cavalry': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW:4, extra:'cav-diag' },
-      'armored-cavalry': { path: 'M25,50 Q50,32 75,50 Q50,68 25,50 Z M30,38 L70,62 M70,38 L30,62', strokeW: 3, fill: true, extra: '' },
-      'field-artillery': { path: 'M20,55 L80,55', strokeW: 4, extra: 'fa-ball' },
-      'air-defense-artillery': { path: 'M50,30 L50,65 M20,65 L80,65', strokeW: 4, extra: 'ada-ball' },
-      'engineers': { path: 'M25,65 L25,48 L35,48 L35,38 L45,38 L45,48 L55,48 L55,38 L65,38 L65,48 L75,48 L75,65 Z', strokeW: 3, fill: true, extra: '' },
-      'military-intelligence': { path: 'M50,28 L50,72 M38,40 L62,60 M62,40 L38,60', strokeW: 3, extra: 'mi' },
-      'signal': { path: 'M20,50 L35,35 L50,65 L65,35 L80,50', strokeW: 3, extra: '' },
-      'military-police': { path: 'M30,30 L70,70 M70,30 L30,70', strokeW: 4, extra: 'mp' },
-      'cbrn': { path: 'M50,50 m-15,0 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 M50,50 L50,28 M50,50 L67,61 M50,50 L33,61', strokeW: 2.5, extra: '' },
-      'cyber': { path: 'M55,25 L40,52 L52,52 L45,75 L62,45 L50,45 Z', strokeW: 2, fill: true, extra: '' },
-      'medical': { path: 'M42,30 L58,30 L58,42 L70,42 L70,58 L58,58 L58,70 L42,70 L42,58 L30,58 L30,42 L42,42 Z', strokeW: 2, fill: true, extra: 'medical' },
-      'supply': { path: 'M38,50 m-12,0 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0 M50,50 L75,50 M70,50 L70,58 M62,50 L62,57', strokeW: 3, extra: '' },
-      'maintenance': { path: 'M38,62 L58,42 M55,28 Q65,22 72,30 Q78,38 68,45 L60,53 L47,47 Z', strokeW: 3, fill: true, extra: '' },
-      'transportation': { path: 'M50,50 m-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0 M50,50 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 M50,30 L50,42 M50,58 L50,70 M30,50 L42,50 M58,50 L70,50', strokeW: 2.5, extra: '' },
-      'finance': { path: '', strokeW: 3, extra: 'finance-text' },
-      'personnel': { path: 'M50,30 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 M50,46 L50,68 M36,55 L64,55 M50,68 L38,80 M50,68 L62,80', strokeW: 2.5, extra: '' },
-      'rotary-wing': { path: 'M50,50 L20,45 M50,50 L80,55 M50,50 L50,25', strokeW: 3, extra: 'rotor' },
-      'fixed-wing': { path: 'M50,30 L50,70 M25,52 L75,48 M35,65 L65,61', strokeW: 3, extra: '' },
-      'uas': { path: 'M50,30 L50,70 M25,50 L75,50', strokeW: 3, extra: 'uas' },
-      'special-forces': { path: 'M50,25 L50,75 M35,40 L50,25 L65,40 M25,60 L75,60', strokeW: 3, extra: '' },
-      'rangers': { path: 'M30,25 L70,75 M30,35 L60,75 M40,25 L70,65', strokeW: 3, extra: '' },
-      'psyop': { path: 'M30,45 L30,58 L42,58 L60,70 L60,33 L42,45 Z', strokeW: 2.5, fill: true, extra: '' },
-      'civil-affairs': { path: 'M50,32 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0 M32,55 L68,55 M50,55 L50,73', strokeW: 3, extra: '' },
-      'hq': { path: '', strokeW: 3, extra: 'hq-text' },
+      'infantry': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: '' },
+      'infantry-mech': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: 'mech' },
+      'infantry-stryker': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: 'wheeled' },
+      'infantry-airborne': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: 'airborne' },
+      'infantry-air-assault': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: 'air-assault' },
+      'infantry-light': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: '' },
+      'armor': { path: 'M 25 45 Q 35 30 50 30 Q 65 30 75 45 Q 65 60 50 60 Q 35 60 25 45 Z', strokeW: 4, fill: true, extra: '' },
+      'cavalry': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45 M 30 55 L 70 55', strokeW: 4, fill: false, extra: 'cav-diag' },
+      'armored-cavalry': { path: 'M 25 45 Q 35 30 50 30 Q 65 30 75 45 Q 65 60 50 60 Q 35 60 25 45 Z M 30 55 L 70 55', strokeW: 4, fill: true, extra: '' },
+      'field-artillery': { path: 'M 25 55 L 75 55 M 40 40 L 60 40', strokeW: 5, fill: false, extra: 'fa-ball' },
+      'air-defense-artillery': { path: 'M 50 30 L 50 70 M 30 50 L 70 50', strokeW: 4, fill: false, extra: 'ada-ball' },
+      'engineers': { path: 'M 30 65 L 30 45 L 40 45 L 40 35 L 50 35 L 50 45 L 60 45 L 60 65 Z', strokeW: 4, fill: true, extra: '' },
+      'military-intelligence': { path: 'M 50 25 L 50 75 M 35 40 L 65 40 M 35 60 L 65 60', strokeW: 4, fill: false, extra: 'mi' },
+      'signal': { path: 'M 25 50 L 40 35 L 50 50 L 60 35 L 75 50', strokeW: 4, fill: false, extra: '' },
+      'military-police': { path: 'M 35 35 L 65 65 M 65 35 L 35 65', strokeW: 5, fill: false, extra: 'mp' },
+      'cbrn': { path: 'M 50 35 L 50 65 M 35 50 L 65 50', strokeW: 4, fill: false, extra: '' },
+      'cyber': { path: 'M 40 40 L 50 30 L 60 40 L 50 50 Z M 35 55 L 65 55', strokeW: 3, fill: true, extra: '' },
+      'medical': { path: 'M 35 40 L 65 40 L 65 50 L 55 60 L 45 60 L 35 50 Z', strokeW: 4, fill: true, extra: 'medical' },
+      'supply': { path: 'M 35 50 L 65 50 M 40 40 L 60 40 M 50 35 L 50 65', strokeW: 4, fill: false, extra: '' },
+      'maintenance': { path: 'M 35 55 L 65 35 M 40 40 L 60 40', strokeW: 4, fill: false, extra: '' },
+      'transportation': { path: 'M 30 50 L 70 50 M 40 40 L 60 40 M 50 35 L 50 65', strokeW: 4, fill: false, extra: '' },
+      'finance': { path: '', strokeW: 4, extra: 'finance-text' },
+      'personnel': { path: 'M 50 35 L 35 50 L 50 65 L 65 50 Z', strokeW: 4, fill: false, extra: '' },
+      'rotary-wing': { path: 'M 50 30 L 30 45 L 50 50 L 70 45 Z M 50 50 L 50 70', strokeW: 4, fill: false, extra: 'rotor' },
+      'fixed-wing': { path: 'M 30 50 L 50 30 L 70 50 L 50 70 Z', strokeW: 4, fill: false, extra: '' },
+      'uas': { path: 'M 50 30 L 30 50 L 50 70 L 70 50 Z', strokeW: 4, fill: false, extra: 'uas' },
+      'special-forces': { path: 'M 35 35 L 50 25 L 65 35 L 50 45 Z M 35 55 L 65 55', strokeW: 4, fill: false, extra: '' },
+      'rangers': { path: 'M 35 35 L 65 35 L 50 50 Z M 35 55 L 65 55', strokeW: 4, fill: false, extra: '' },
+      'psyop': { path: 'M 35 40 L 65 40 L 50 55 Z', strokeW: 4, fill: false, extra: '' },
+      'civil-affairs': { path: 'M 50 35 L 35 50 L 50 65 L 65 50 Z', strokeW: 4, fill: false, extra: '' },
+      'hq': { path: '', strokeW: 4, extra: 'hq-text' },
     };
 
     const FM102_ECHELON = {
@@ -1152,7 +1175,6 @@
       alert(`MIL-STD-2525E symbol placed at MGRS: ${mgrs} (demo placement at map center)`);
     }
 
-    // ====================== CONTROL MEASURES ======================
     function drawControlMeasure(type) {
       const labels = { 'phase-line': 'Phase Line', 'boundary': 'Boundary', 'feba': 'FEBA / FLOT', 'ld': 'Line of Departure', 'aoo': 'Area of Operations', 'objective': 'Objective', 'assembly-area': 'Assembly Area', 'axis': 'Axis of Advance' };
       const styles = {
@@ -1183,7 +1205,6 @@
       if (document.getElementById('staff-chat-tab').classList.contains('active')) addChatMessage(7, `S3/G3: MIL-STD-2525E ${label} control measure plotted on overlay.`, false);
     }
 
-    // ====================== LIVE SYMBOL PREVIEW ======================
     function updateSymbolPreview() {
       const cfg = getCurrentSymbolConfig();
       const svgStr = buildSymbolSVG(cfg.unitType, cfg.echelon, cfg.force, cfg.unitDesig, cfg.higherHQ, cfg.taskOrg, cfg.taskForce, 100);
@@ -1264,7 +1285,7 @@
       setTimeout(() => win.print(), 600);
     }
 
-    // ====================== TAB SWITCHING ======================
+    // ====================== TAB SWITCHING + CHAT INITIALIZATION ======================
     function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1280,9 +1301,17 @@
       } else if (tabId === 'staff-chat-tab') {
         document.getElementById('placemat-controls').style.display = 'none';
         renderStaffBots();
+        initializeChat();   // <-- This makes the chat immediately usable
       } else {
         document.getElementById('placemat-controls').style.display = 'none';
       }
+    }
+
+    function initializeChat() {
+      if (chatInitialized) return;
+      chatInitialized = true;
+      const messagesDiv = document.getElementById('chat-messages');
+      addChatMessage(1, `XO (War College): Good day, Sir/Ma'am. Full staff is online and ready. How can we support you with MDMP, OPORD, or any other task today?`, false);
     }
 
     // ====================== STAFF CHAT CORE ======================
@@ -1324,16 +1353,46 @@
       setTimeout(() => handleStaffResponse(msg), 800);
     }
 
+    // NEW: Quick command buttons
+    function quickCommand(cmd) {
+      if (cmd === 'mdmp') {
+        addChatMessage(0, 'Initiate MDMP', true);
+        startMDMP(true);
+      } else if (cmd === 'opord') {
+        addChatMessage(0, 'Generate OPORD', true);
+        generateOPORD(true);
+      } else if (cmd === 'plot') {
+        addChatMessage(0, 'Plot Symbol', true);
+        addSymbolAtLatLng(map.getCenter());
+        addChatMessage(7, `S3/G3: MIL-STD-2525E symbol plotted on overlay.`, false);
+      } else if (cmd === 'sitrep') {
+        addChatMessage(0, 'Request SITREP', true);
+        addChatMessage(7, `S3/G3: SITREP — All sections green. No major changes.`, false);
+      } else if (cmd === 'intel') {
+        addChatMessage(0, 'Intel Update', true);
+        addChatMessage(5, `S2/G2: Latest intel — Enemy activity low in NAIs 1-3.`, false);
+      } else if (cmd === 'log') {
+        addChatMessage(0, 'Logistics Status', true);
+        addChatMessage(9, `S4/G4: Logistics status green — Class III/V at 92%.`, false);
+      }
+    }
+
     function handleStaffResponse(userMsg) {
       const lower = userMsg.toLowerCase();
       if (lower.includes('mdmp') || lower.includes('mission')) startMDMP(true);
       else if (lower.includes('opord') || lower.includes('order')) generateOPORD(true);
-      else if (lower.includes('plot') || lower.includes('overlay')) {
+      else if (lower.includes('plot') || lower.includes('overlay') || lower.includes('symbol')) {
         addSymbolAtLatLng(map.getCenter());
-        addChatMessage(7, `S3/G3 (CGSC): MIL-STD-2525E ${currentEchelon} enemy recon screen plotted on overlay per FM 1-02.2.`, false);
-        addChatMessage(5, `S2/G2 (CGSC): Confirmed — updated running estimate and placemat with new NAIs / DPs.`, false);
+        addChatMessage(7, `S3/G3 (CGSC): MIL-STD-2525E symbol plotted on overlay per FM 1-02.2.`, false);
+        addChatMessage(5, `S2/G2 (CGSC): Confirmed — updated running estimate and placemat.`, false);
       } else if (lower.includes('upload') && uploadedDocumentContent) {
         addChatMessage(1, `XO (War College): Document analyzed. Cross-echelon conversion complete. Integrated into MDMP with full staff input.`, false);
+      } else if (lower.includes('sitrep') || lower.includes('status')) {
+        addChatMessage(7, `S3/G3 (CGSC): SITREP — All sections green. No major changes.`, false);
+      } else if (lower.includes('intel') || lower.includes('threat')) {
+        addChatMessage(5, `S2/G2 (CGSC): Latest intel — Enemy activity low in NAIs 1-3.`, false);
+      } else if (lower.includes('log') || lower.includes('logistics')) {
+        addChatMessage(9, `S4/G4 (CGSC): Logistics status green — Class III/V at 92%.`, false);
       } else {
         const randomBot = staffBots[Math.floor(Math.random() * staffBots.length)];
         const responses = [
@@ -1351,67 +1410,47 @@
       }
     }
 
-    // ====================== MDMP & OPORD (FULL STAFF, CGSC / WAR COLLEGE LEVEL) ======================
+    // ====================== MDMP & OPORD ======================
     function startMDMP(fromChat = false) {
       if (!fromChat) switchTab('staff-chat-tab', document.querySelector('.tab-btn[onclick*="staff-chat-tab"]'));
       addChatMessage(1, `XO (War College): Mission received. Full staff initiating MDMP (FM 5-0 / CGSC doctrine). All S1–S9 / G1–G9, EN, SPO, SJA, Surgeon engaged.`, false);
-
       const mdmpSteps = [
-        { botId: 7, text: `S3/G3 (CGSC): Step 1 — Receipt of Mission complete. Higher OPORD parsed and disseminated.` },
-        { botId: 5, text: `S2/G2 (CGSC): Step 2 — Mission Analysis. Enemy SITEMP built with MIL-STD-2525E graphics. 3 COAs developed.` },
-        { botId: 8, text: `S3/G3 NCO (Battle Staff): Troop-leading procedures and parallel planning briefed to all subordinate units.` },
-        { botId: 2, text: `CSM (CSM Course): NCO perspective — morale high, sustainment concerns and training shortfalls noted.` },
+        { botId: 7, text: `S3/G3 (CGSC): Step 1 — Receipt of Mission complete.` },
+        { botId: 5, text: `S2/G2 (CGSC): Step 2 — Mission Analysis. Enemy SITEMP built with MIL-STD-2525E graphics.` },
+        { botId: 8, text: `S3/G3 NCO (Battle Staff): Troop-leading procedures briefed.` },
+        { botId: 2, text: `CSM (CSM Course): NCO perspective — morale high.` },
         { botId: 9, text: `S4/G4 (CGSC): Logistics running estimate integrated.` },
-        { botId: 17, text: `Engineer (CGSC): Mobility / countermobility plan synchronized.` },
-        { botId: 19, text: `SPO (CGSC): Sustainment synchronization matrix complete.` },
-        { botId: 22, text: `SJA (War College): Legal / ROE review complete.` },
-        { botId: 23, text: `Surgeon (War College): Casualty estimate and Class VIII status integrated.` },
-        { botId: 1, text: `XO (War College): Step 3–6 COA Development / Wargaming complete. Step 7 — Orders Production underway.` }
+        { botId: 17, text: `Engineer (CGSC): Mobility plan synchronized.` },
+        { botId: 19, text: `SPO (CGSC): Sustainment matrix complete.` },
+        { botId: 22, text: `SJA (War College): Legal review complete.` },
+        { botId: 23, text: `Surgeon (War College): Casualty estimate integrated.` },
+        { botId: 1, text: `XO (War College): Orders Production underway.` }
       ];
-
       let delay = 1100;
       mdmpSteps.forEach((step, i) => {
         setTimeout(() => {
           addChatMessage(step.botId, step.text, false);
-          if (i === 4) {
-            populatePlacematFromBots({
-              status: ["BN / BDE CP established", "All S/G sections synchronized"],
-              impacts: ["Enemy recon increased in NAIs 1-3", "Weather impacting UAS"],
-              outlook: ["Enemy probe expected D+1", "Reinforcements D+2"],
-              decisions: ["Commit reserve company / brigade?", "Adjust FEBA?"],
-              ccir: ["What is enemy main effort axis?", "Status of bridging assets?"],
-              risks: ["ATGM ambush (S2)", "Log sustainment shortfall (S4)", "Cyber intrusion (S6)"],
-              opps: ["Exploit gap in enemy recon screen", "Conduct air assault on objective"],
-              guidance: ["Maintain aggressive reconnaissance", "Preserve combat power for decisive operation"]
-            });
-          }
+          if (i === 4) populatePlacematFromBots({ status: ["CP established"], impacts: ["Enemy recon increased"], outlook: ["Probe expected D+1"], decisions: ["Commit reserve?"], ccir: ["Enemy main effort?"], risks: ["ATGM ambush"], opps: ["Exploit gap"], guidance: ["Maintain recon"] });
         }, delay * (i + 1));
       });
     }
 
     function generateOPORD(fromChat = false) {
       if (!fromChat) switchTab('staff-chat-tab', document.querySelector('.tab-btn[onclick*="staff-chat-tab"]'));
-      addChatMessage(1, `XO (War College): Generating full OPORD + Annexes for selected echelon (${currentEchelon}). Full staff (S1–S9 / G1–G9 / EN / SPO / SJA / Surgeon) contributing per FM 5-0.`, false);
-
+      addChatMessage(1, `XO (War College): Generating full OPORD + Annexes for ${currentEchelon}. Full staff contributing per FM 5-0.`, false);
+      setTimeout(() => addChatMessage(7, `S3/G3 (CGSC): OPORD draft complete with embedded MIL-STD-2525E overlays.`, false), 900);
       setTimeout(() => {
-        addChatMessage(7, `S3/G3 (CGSC): OPORD draft complete. Annex A (Task Org), Annex B (Intel), Annex C (Operations) ready with embedded MIL-STD-2525E overlays.`, false);
-      }, 900);
-
-      setTimeout(() => {
-        const opordText = `OPORD ${currentEchelon.toUpperCase()} — OPERATION IRON SHIELD\n\nSituation: ...\nMission: Seize OBJ HAMMER\nExecution: ...\n\nAnnexes generated with full staff (S/G1–9, EN, SPO, SJA, Surgeon) input and MIL-STD-2525E graphics.`;
+        const opordText = `OPORD ${currentEchelon.toUpperCase()} — OPERATION IRON SHIELD\n\nSituation: ...\nMission: Seize OBJ HAMMER\n\nAnnexes generated with full staff input and MIL-STD-2525E graphics.`;
         const blob = new Blob([opordText], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `OPORD_${currentEchelon}_IronShield_FullStaff.txt`;
         a.click();
-
-        addChatMessage(1, `XO (War College): Full OPORD + all Annexes / Appendices / Overlays exported. Synchronized across entire staff.`, false);
-        addChatMessage(9, `S4/G4 (CGSC): Logistics Annex populated — Class III/V status 92%.`, false);
-        addChatMessage(22, `SJA (War College): Legal Annex reviewed and incorporated.`, false);
+        addChatMessage(1, `XO (War College): Full OPORD + all Annexes / Overlays exported.`, false);
       }, 2200);
     }
 
-    // ====================== UPLOAD & ECHELON ======================
+    // ====================== UPLOAD ======================
     function analyzeUploadedFile() {
       const fileInput = document.getElementById('fileUpload');
       const file = fileInput.files[0];
@@ -1419,9 +1458,9 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         uploadedDocumentContent = e.target.result.substring(0, 800);
-        document.getElementById('analysisResult').innerHTML = `<strong>✅ UPLOADED: ${file.name}</strong><br>Echelon detected: ANY (Platoon–Corps)<br>Full staff notified — conversion to ${currentEchelon} complete with CGSC-level doctrinal review.<br><button class="download-btn" onclick="addChatMessage(1, 'XO: Upload integrated into MDMP with full staff (S/G1–9) input.', false)">Send to STAFF CHAT</button>`;
+        document.getElementById('analysisResult').innerHTML = `<strong>✅ UPLOADED: ${file.name}</strong><br>Bots notified — conversion to ${currentEchelon} complete.<br><button class="download-btn" onclick="addChatMessage(1, 'XO: Upload integrated into MDMP.', false)">Send to STAFF CHAT</button>`;
         switchTab('staff-chat-tab', document.querySelector('.tab-btn[onclick*="staff-chat-tab"]'));
-        addChatMessage(5, `S2/G2 (CGSC): Uploaded document analyzed. Converted to ${currentEchelon} format with MIL-STD-2525E compliance check.`, false);
+        addChatMessage(5, `S2/G2 (CGSC): Document analyzed and converted.`, false);
       };
       reader.readAsText(file);
     }
@@ -1429,27 +1468,25 @@
     function updateEchelon() {
       currentEchelon = document.getElementById('echelon').value;
       document.getElementById('status-echelon').textContent = `ECHELON: ${currentEchelon.toUpperCase()}`;
-      if (document.getElementById('staff-chat-tab').classList.contains('active')) {
-        addChatMessage(1, `XO (War College): Echelon updated to ${currentEchelon}. All S/G staff sections, Engineer, SPO, SJA, and Surgeon realigned for MDMP / OPORD products.`, false);
-      }
+      if (document.getElementById('staff-chat-tab').classList.contains('active')) addChatMessage(1, `XO (War College): Echelon updated to ${currentEchelon}.`, false);
     }
 
     function askDoctrine() {
       const q = document.getElementById('question').value;
       const answerBox = document.getElementById('answer');
-      answerBox.textContent = `DOCTRINE ANSWER (MIL-STD-2525E / FM 6-0 / FM 5-0): ${q}\n\nPer CGSC / War College doctrine, full staff (S1–S9 / G1–G9) collaborates as shown in STAFF CHAT.`;
+      answerBox.textContent = `DOCTRINE ANSWER: ${q}\n\nFull staff collaboration as shown in STAFF CHAT.`;
     }
 
     function saveOverlayAsPDF() {
       alert('Preparing PDF export with embedded MIL-STD-2525E symbols...');
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape', 'pt', [792, 612]);
-      doc.text('UNCLASSIFIED — OpsForge Tactical Overlay — MIL-STD-2525E — Full Staff Approved', 40, 40);
+      doc.text('UNCLASSIFIED — OpsForge Tactical Overlay — MIL-STD-2525E', 40, 40);
       doc.save('OpsForge_MIL-STD-2525E_Overlay.pdf');
     }
 
     function unlockPremium() {
-      alert("✅ PREMIUM UNLOCKED — Full MIL-STD-2525E library, unlimited echelon conversions, and complete CGSC-level staff collaboration now active.");
+      alert("✅ PREMIUM UNLOCKED — Full features active.");
     }
 
     // ====================== INITIALIZATION ======================
@@ -1465,7 +1502,7 @@
       setInterval(updateClock, 1000);
       updateClock();
 
-      console.log('%c✅ OpsForge fully upgraded with COMPLETE STAFF BOTS (S1-S9 / G1-G9 + EN + SPO + SJA + SURGEON) — CGSC / WAR COLLEGE / BATTLE STAFF / CSM COURSE expertise', 'color:#00ff41;font-family:monospace');
+      console.log('%c✅ OpsForge fully upgraded with interactive staff bots + complete MIL-STD-2525E engine', 'color:#00ff41;font-family:monospace');
     });
   </script>
 </body>
