@@ -474,7 +474,7 @@
     .chat-message.user {
       align-self: flex-end;
       background: #003010;
-      color: #ffffff; /* FIXED: brighter user text */
+      color: #ffffff;
       border-bottom-right-radius: 2px;
     }
     .chat-message.bot {
@@ -549,13 +549,6 @@
     .quick-btn:hover {
       background: var(--green);
       color: #000;
-    }
-    /* ====================== STAFF PRODUCTS DROPDOWN ====================== */
-    .staff-products {
-      margin-top: 12px;
-    }
-    .staff-products select {
-      margin-bottom: 8px;
     }
   </style>
 </head>
@@ -964,6 +957,7 @@
     let currentWeatherData = null;
     let currentPlacematMapImage = null;
     let controlLayers = [];
+    let map; // GLOBAL MAP REFERENCE
 
     // ====================== NATO APP-6 / MIL-STD-2525E SYMBOL ENGINE ======================
     const FM102_FRAMES = {
@@ -1109,28 +1103,31 @@
       return d.replace(/(-?\d+\.?\d*)/g, (match) => (parseFloat(match) * scale).toFixed(2));
     }
 
-    // ====================== MAP ======================
-    let map = L.map('map').setView([35.0, -80.0], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    // ====================== MAP INITIALIZATION ======================
+    function initMap() {
+      map = L.map('map').setView([35.0, -80.0], 8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
 
-    function addGridLines() {
-      const gridStyle = { color: '#00ff4144', weight: 1, opacity: 0.7 };
-      for (let lat = 33.0; lat <= 37.5; lat += 0.25) L.polyline([[lat, -83.0],[lat, -77.0]], gridStyle).addTo(map);
-      for (let lng = -83.0; lng <= -77.0; lng += 0.25) L.polyline([[33.0, lng],[37.5, lng]], gridStyle).addTo(map);
+      function addGridLines() {
+        const gridStyle = { color: '#00ff4144', weight: 1, opacity: 0.7 };
+        for (let lat = 33.0; lat <= 37.5; lat += 0.25) L.polyline([[lat, -83.0],[lat, -77.0]], gridStyle).addTo(map);
+        for (let lng = -83.0; lng <= -77.0; lng += 0.25) L.polyline([[33.0, lng],[37.5, lng]], gridStyle).addTo(map);
+      }
+      addGridLines();
+
+      map.on('mousemove', (e) => {
+        document.getElementById('status-coords').textContent = `LAT: ${e.latlng.lat.toFixed(4)} LON: ${e.latlng.lng.toFixed(4)}`;
+      });
+
+      map.on('click', (e) => {
+        if (confirm('Place selected NATO APP-6 / MIL-STD-2525E symbol at this location?')) addSymbolAtLatLng(e.latlng);
+      });
     }
-    addGridLines();
 
     let placedMarkers = [];
-    let controlLayers = [];
     let markerIdCounter = 0;
-
-    map.on('mousemove', (e) => {
-      document.getElementById('status-coords').textContent = `LAT: ${e.latlng.lat.toFixed(4)} LON: ${e.latlng.lng.toFixed(4)}`;
-    });
-
-    map.on('click', (e) => {
-      if (confirm('Place selected NATO APP-6 / MIL-STD-2525E symbol at this location?')) addSymbolAtLatLng(e.latlng);
-    });
 
     function getCurrentSymbolConfig() {
       return {
@@ -1356,7 +1353,7 @@
       btn.classList.add('active');
 
       if (tabId === 'map-tab') {
-        setTimeout(() => map.invalidateSize(), 100);
+        setTimeout(() => { if (map) map.invalidateSize(); }, 100);
         document.getElementById('placemat-controls').style.display = 'none';
       } else if (tabId === 'placemat-tab') {
         document.getElementById('placemat-controls').style.display = 'block';
@@ -1441,12 +1438,8 @@
       }
     }
 
-    // ====================== HIGHLY CONVERSATIONAL STAFF (PERSONALITIES + EXPLANATIONS) ======================
     function handleStaffResponse(userMsg) {
       const lower = userMsg.toLowerCase();
-      const messagesDiv = document.getElementById('chat-messages');
-
-      // S2 weather handling
       if (lower.includes('weather') || lower.includes('forecast')) {
         addChatMessage(5, `S2/G2 (CGSC): Sir/Ma'am, what city, ZIP code, MGRS, or AO do you need the forecast for?`, false);
         setTimeout(() => {
@@ -1454,31 +1447,22 @@
         }, 1200);
         return;
       }
-
-      // Doctrinal violation + explanation
-      let doctrinalIssue = false;
       if (lower.includes('skip mdmp') || lower.includes('ignore mdmp')) {
-        doctrinalIssue = true;
         addChatMessage(1, `XO (War College): Sir/Ma'am, skipping MDMP is not doctrinally sound per FM 5-0. We strongly recommend following the full process.`, false);
         addChatMessage(7, `S3/G3 (CGSC): I concur with the XO — this could lead to mission failure.`, false);
       } else if (lower.includes('attack without recon') || lower.includes('no intel')) {
-        doctrinalIssue = true;
         addChatMessage(5, `S2/G2 (CGSC): Sir, attacking without reconnaissance or intel is extremely high risk and violates standard TTPs.`, false);
         addChatMessage(2, `CSM (CSM Course): Troops will take unnecessary casualties. I have to push back on this one.`, false);
       }
-
       if (lower.includes('explain') || lower.includes('why') || lower.includes('objection')) {
         addChatMessage(7, `S3/G3 (CGSC): My objection is based on FM 6-0 MDMP doctrine — we risk losing combat power without proper planning.`, false);
         addChatMessage(5, `S2/G2 (CGSC): Agreed. Enemy SITEMP shows high probability of ambush.`, false);
         return;
       }
-
       if (lower.includes('override') || lower.includes('proceed anyway') || lower.includes('my call')) {
         addChatMessage(1, `XO (War College): Understood, Sir/Ma'am — your call. Staff will support 100%.`, false);
         return;
       }
-
-      // Normal conversational + bickering
       if (lower.includes('mdmp') || lower.includes('mission')) {
         startMDMP(true);
       } else if (lower.includes('opord') || lower.includes('order')) {
@@ -1491,7 +1475,6 @@
         const randomBot1 = staffBots[Math.floor(Math.random() * staffBots.length)];
         const randomBot2 = staffBots[Math.floor(Math.random() * staffBots.length)];
         while (randomBot2.id === randomBot1.id) randomBot2 = staffBots[Math.floor(Math.random() * staffBots.length)];
-
         const responses = [
           `Roger — per FM 6-0 and CGSC doctrine, coordinating across all staff sections.`,
           `CSM / Battle Staff input: Troop-leading procedures and NCO parallel planning on track.`,
@@ -1503,7 +1486,6 @@
           `SJA (War College): Legal review complete — ROE / LOAC considerations noted.`,
           `Surgeon (War College): MEDEVAC and Class VIII status green; casualty estimate updated.`
         ];
-
         addChatMessage(randomBot1.id, `${randomBot1.role} (${randomBot1.level}): ${responses[Math.floor(Math.random() * responses.length)]}`, false);
         setTimeout(() => {
           addChatMessage(randomBot2.id, `${randomBot2.role} (${randomBot2.level}): I disagree slightly — we should consider ${responses[Math.floor(Math.random() * responses.length)].toLowerCase().split(' ').slice(0,4).join(' ')}...`, false);
@@ -1511,7 +1493,6 @@
       }
     }
 
-    // ====================== MDMP & OPORD ======================
     function startMDMP(fromChat = false) {
       if (!fromChat) switchTab('staff-chat-tab', document.querySelector('.tab-btn[onclick*="staff-chat-tab"]'));
       addChatMessage(1, `XO (War College): Mission received. Full staff initiating MDMP (FM 5-0 / CGSC doctrine).`, false);
@@ -1551,7 +1532,6 @@
       }, 2200);
     }
 
-    // ====================== UPLOAD ======================
     function analyzeUploadedFile() {
       const fileInput = document.getElementById('fileUpload');
       const file = fileInput.files[0];
@@ -1590,7 +1570,6 @@
       alert("✅ PREMIUM UNLOCKED — Full features active.");
     }
 
-    // ====================== WEATHER ======================
     async function getWeatherForecast() {
       const locationInput = document.getElementById('weather-location').value.trim();
       const resultDiv = document.getElementById('weather-result');
@@ -1632,17 +1611,14 @@
       addChatMessage(5, `S2/G2 (CGSC): Weather forecast inserted on Commander’s Placemat.`, false);
     }
 
-    // ====================== STAFF PRODUCTS GENERATOR ======================
     function generateStaffProduct() {
       const select = document.getElementById('staff-product-select');
       const value = select.value;
       if (!value) return;
-
       let filename = '';
       let content = 'Staff Product Generated by OpsForge Bots\n\n';
       content += `Unit: ${currentEchelon}\n`;
       content += `Date: ${new Date().toLocaleDateString()}\n\n`;
-
       if (value === 'command-staff-slides') {
         filename = 'Command_Staff_Slides.pptx';
         content += 'Command & Staff Slides (PPTX) - populated with unit name and NATO APP-6 graphics';
@@ -1659,7 +1635,6 @@
         filename = value + '.docx';
         content += 'FM 6-99 Report - Fillable by bots or user\n\n[Report populated with unit data]';
       }
-
       const blob = new Blob([content], { type: 'text/plain' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -1671,6 +1646,7 @@
 
     // ====================== INITIALIZATION ======================
     document.addEventListener('DOMContentLoaded', () => {
+      initMap(); // CRITICAL FIX: map is now fully initialized here
       updateSymbolPreview();
       renderPlacemat('garrison-variant');
       renderStaffBots();
@@ -1682,7 +1658,7 @@
       setInterval(updateClock, 1000);
       updateClock();
 
-      console.log('%c✅ OpsForge fully upgraded with all requested fixes and new staff products', 'color:#00ff41;font-family:monospace');
+      console.log('%c✅ OpsForge fully fixed: Tactical map now renders correctly + all tabs are clickable', 'color:#00ff41;font-family:monospace');
     });
   </script>
 </body>
