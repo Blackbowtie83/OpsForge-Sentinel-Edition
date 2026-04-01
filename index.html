@@ -184,6 +184,8 @@
     .btn-primary { background: var(--green-dark); border-color: var(--green); width: 100%; justify-content: center; }
     .btn-amber { border-color: var(--amber); color: var(--amber); }
     .btn-amber:hover { background: var(--amber); color: #000; box-shadow: 0 0 15px var(--amber); }
+    .btn-red { border-color: var(--red); color: var(--red); }
+    .btn-red:hover { background: var(--red); color: #fff; }
     .symbol-preview-box {
       background: #000;
       border: 1px solid var(--border);
@@ -205,6 +207,27 @@
       height: calc(100vh - 90px - 52px);
       min-height: 500px;
       background: #040404;
+      position: relative;
+    }
+    /* North Arrow */
+    .north-arrow {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 48px;
+      height: 48px;
+      background: rgba(0, 26, 8, 0.95);
+      border: 2px solid var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: var(--green);
+      box-shadow: 0 0 12px var(--green);
+      z-index: 1000;
+      pointer-events: none;
+      font-family: var(--font-ui);
     }
     .answer-box, .analysis-box, .weather-box {
       background: #000;
@@ -355,18 +378,19 @@
       background-color: #ffffff;
       position: relative;
       border: 1px solid var(--accent-line, #000);
+      overflow: hidden;
     }
     .map-placeholder {
-      border: 2px dashed #000;
-      flex: 1;
-      min-height: 400px;
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 13px;
       text-align: center;
       padding: 20px;
-      background: #f9f9f9;
+      background: #111;
+      color: #0f0;
     }
     .bottom-band {
       border-top: 1px solid var(--accent-line, #000);
@@ -529,21 +553,6 @@
       background: var(--green);
       color: #000;
     }
-    /* ====================== NEW WEATHER TAB STYLES ====================== */
-    .weather-input {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 15px;
-    }
-    .weather-input input {
-      flex: 1;
-    }
-    .weather-forecast {
-      background: #001a08;
-      border: 1px solid var(--green-dim);
-      padding: 12px;
-      margin-top: 12px;
-    }
   </style>
 </head>
 <body>
@@ -574,7 +583,7 @@
 
   <!-- MAIN LAYOUT -->
   <div class="main-layout">
-    <!-- SIDEBAR (unchanged except NATO APP-6 labeling) -->
+    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div>
         <div class="panel-title">Command Echelon</div>
@@ -593,9 +602,11 @@
         <div id="staff-bots-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
         <button class="btn btn-primary" onclick="startMDMP()" style="margin-top:12px;width:100%;">🚀 INITIATE MDMP (CGSC / WAR COLLEGE LEVEL)</button>
         <button class="btn btn-amber" onclick="generateOPORD()" style="margin-top:8px;width:100%;">📜 GENERATE OPORD + ANNEXES</button>
+        <button class="btn btn-amber" onclick="sanitizeMap()" style="margin-top:8px;width:100%;">🧹 SANITIZE TACTICAL MAP</button>
+        <button class="btn btn-primary" onclick="syncMapToPlacemat()" style="margin-top:8px;width:100%;">📸 SYNC TACTICAL MAP TO PLACEMAT</button>
       </div>
 
-      <!-- SYMBOL BUILDER – NATO APP-6 / MIL-STD-2525E -->
+      <!-- SYMBOL BUILDER -->
       <div>
         <div class="panel-title">Symbol Builder — NATO APP-6 / MIL-STD-2525E</div>
         <label>Standard Identity (Frame)</label>
@@ -704,7 +715,7 @@
         </div>
       </div>
 
-      <!-- CONTROL MEASURES & MGRS (unchanged) -->
+      <!-- CONTROL MEASURES -->
       <div>
         <div class="panel-title">Control Measures — NATO APP-6 / MIL-STD-2525E</div>
         <div class="cm-grid">
@@ -719,6 +730,7 @@
         </div>
       </div>
 
+      <!-- MGRS -->
       <div>
         <div class="panel-title">MGRS Placement</div>
         <p class="small-note">Format: GZD SQ 5-digit 5-digit (e.g. 18S UJ 12345 67890)</p>
@@ -758,6 +770,8 @@
       <!-- TACTICAL MAP TAB -->
       <div class="tab-content active" id="map-tab">
         <div id="map"></div>
+        <!-- North Arrow -->
+        <div class="north-arrow">↑<br><span style="font-size:10px;letter-spacing:1px;">N</span></div>
       </div>
 
       <!-- PLACEMAT TAB -->
@@ -765,18 +779,15 @@
         <div id="placemat-wrapper"></div>
       </div>
 
-      <!-- NEW WEATHER TAB -->
+      <!-- WEATHER TAB -->
       <div class="tab-content" id="weather-tab">
         <div class="section-heading">S2 / G2 Weather Forecast — NATO APP-6 / MIL-STD-2525E Area of Operations</div>
-        <p class="small-note">Enter ZIP code, City, or MGRS. S2 will provide current conditions + 5-day forecast (Open-Meteo data).</p>
-        
+        <p class="small-note">Enter ZIP code, City, or MGRS. S2 will provide current conditions + 5-day forecast.</p>
         <div class="weather-input">
           <input type="text" id="weather-location" placeholder="Enter ZIP, City, or MGRS (e.g. 48197, Ypsilanti MI, 18S UJ 12345 67890)">
           <button class="btn btn-primary" onclick="getWeatherForecast()">GET FORECAST (S2)</button>
         </div>
-
         <div id="weather-result" class="weather-box"></div>
-
         <button class="btn btn-amber" onclick="insertWeatherOnPlacemat()" style="margin-top:12px;width:100%;">INSERT FORECAST ON PLACEMAT</button>
       </div>
 
@@ -856,32 +867,32 @@
      * SOFTWARE.
      */
 
-    // ====================== FULL STAFF BOTS ======================
+    // ====================== FULL STAFF BOTS (CLEAN NAMES - NO DUPLICATE RANKS) ======================
     const staffBots = [
-      { id: 1, name: "MAJ Smith", role: "XO / Chief of Staff", rank: "MAJ", avatar: "🧑‍✈️", color: "#00ff41", level: "CGSC / War College" },
-      { id: 2, name: "CSM Jones", role: "Command Sergeant Major", rank: "CSM", avatar: "🪖", color: "#ffb300", level: "CSM Course / Battle Staff" },
-      { id: 3, name: "CPT Rivera", role: "S1 / G1 Personnel Officer", rank: "CPT", avatar: "📋", color: "#00a32a", level: "CGSC" },
-      { id: 4, name: "SFC Morales", role: "S1 / G1 Personnel NCO", rank: "SFC", avatar: "📋", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 5, name: "CPT Lee", role: "S2 / G2 Intelligence Officer", rank: "CPT", avatar: "🧠", color: "#00a32a", level: "CGSC" },
-      { id: 6, name: "SSG Patel", role: "S2 / G2 Intel NCO", rank: "SSG", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 7, name: "CPT Davis", role: "S3 / G3 Operations Officer", rank: "CPT", avatar: "📍", color: "#00a32a", level: "CGSC / War College" },
-      { id: 8, name: "SFC Ramirez", role: "S3 / G3 Operations NCO", rank: "SFC", avatar: "🔧", color: "#00ff41", level: "NCO Battle Staff" },
-      { id: 9, name: "MAJ Torres", role: "S4 / G4 Logistics Officer", rank: "MAJ", avatar: "🚚", color: "#00ff41", level: "CGSC" },
-      { id: 10, name: "MSG Kowalski", role: "S4 / G4 Logistics NCO", rank: "MSG", avatar: "🚚", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 11, name: "MAJ Harper", role: "S5 / G5 Plans Officer", rank: "MAJ", avatar: "📐", color: "#00a32a", level: "War College" },
-      { id: 12, name: "CPT Nguyen", role: "S6 / G6 Signal Officer", rank: "CPT", avatar: "📡", color: "#00a32a", level: "CGSC" },
-      { id: 13, name: "SFC Chen", role: "S6 / G6 Signal NCO", rank: "SFC", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 14, name: "MAJ Brooks", role: "S7 / G7 Training Officer", rank: "MAJ", avatar: "🏋️", color: "#00ff41", level: "CGSC" },
-      { id: 15, name: "CPT Patel", role: "S8 / G8 Finance Officer", rank: "CPT", avatar: "💰", color: "#00a32a", level: "CGSC" },
-      { id: 16, name: "CPT Alvarez", role: "S9 / G9 Civil Affairs Officer", rank: "CPT", avatar: "🌍", color: "#00a32a", level: "CGSC" },
-      { id: 17, name: "MAJ Thompson", role: "Engineer Officer", rank: "MAJ", avatar: "🛠️", color: "#00ff41", level: "CGSC" },
-      { id: 18, name: "SFC Rodriguez", role: "Engineer NCO", rank: "SFC", avatar: "🛠️", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 19, name: "MAJ Ellis", role: "Support Operations Officer (SPO)", rank: "MAJ", avatar: "📦", color: "#00a32a", level: "CGSC" },
-      { id: 20, name: "MSG Carter", role: "Support Operations NCO (SPO)", rank: "MSG", avatar: "📦", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 21, name: "COL Ramirez", role: "G Staff Lead", rank: "COL", avatar: "⭐", color: "#00ff41", level: "War College" },
-      { id: 22, name: "LTC Hayes", role: "Staff Judge Advocate (SJA)", rank: "LTC", avatar: "⚖️", color: "#ffb300", level: "War College" },
-      { id: 23, name: "COL Dr. Morgan", role: "Surgeon", rank: "COL", avatar: "🩺", color: "#00a32a", level: "War College" },
-      { id: 24, name: "1SG Walker", role: "Senior NCO", rank: "1SG", avatar: "🪖", color: "#ffb300", level: "NCO Battle Staff / CSM Course" }
+      { id: 1, name: "Smith", role: "XO / Chief of Staff", rank: "MAJ", avatar: "🧑‍✈️", color: "#00ff41", level: "CGSC / War College" },
+      { id: 2, name: "Jones", role: "Command Sergeant Major", rank: "CSM", avatar: "🪖", color: "#ffb300", level: "CSM Course / Battle Staff" },
+      { id: 3, name: "Rivera", role: "S1 / G1 Personnel Officer", rank: "CPT", avatar: "📋", color: "#00a32a", level: "CGSC" },
+      { id: 4, name: "Morales", role: "S1 / G1 Personnel NCO", rank: "SFC", avatar: "📋", color: "#ffb300", level: "NCO Battle Staff" },
+      { id: 5, name: "Lee", role: "S2 / G2 Intelligence Officer", rank: "CPT", avatar: "🧠", color: "#00a32a", level: "CGSC" },
+      { id: 6, name: "Patel", role: "S2 / G2 Intel NCO", rank: "SSG", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff" },
+      { id: 7, name: "Davis", role: "S3 / G3 Operations Officer", rank: "CPT", avatar: "📍", color: "#00a32a", level: "CGSC / War College" },
+      { id: 8, name: "Ramirez", role: "S3 / G3 Operations NCO", rank: "SFC", avatar: "🔧", color: "#00ff41", level: "NCO Battle Staff" },
+      { id: 9, name: "Torres", role: "S4 / G4 Logistics Officer", rank: "MAJ", avatar: "🚚", color: "#00ff41", level: "CGSC" },
+      { id: 10, name: "Kowalski", role: "S4 / G4 Logistics NCO", rank: "MSG", avatar: "🚚", color: "#ffb300", level: "NCO Battle Staff" },
+      { id: 11, name: "Harper", role: "S5 / G5 Plans Officer", rank: "MAJ", avatar: "📐", color: "#00a32a", level: "War College" },
+      { id: 12, name: "Nguyen", role: "S6 / G6 Signal Officer", rank: "CPT", avatar: "📡", color: "#00a32a", level: "CGSC" },
+      { id: 13, name: "Chen", role: "S6 / G6 Signal NCO", rank: "SFC", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff" },
+      { id: 14, name: "Brooks", role: "S7 / G7 Training Officer", rank: "MAJ", avatar: "🏋️", color: "#00ff41", level: "CGSC" },
+      { id: 15, name: "Patel", role: "S8 / G8 Finance Officer", rank: "CPT", avatar: "💰", color: "#00a32a", level: "CGSC" },
+      { id: 16, name: "Alvarez", role: "S9 / G9 Civil Affairs Officer", rank: "CPT", avatar: "🌍", color: "#00a32a", level: "CGSC" },
+      { id: 17, name: "Thompson", role: "Engineer Officer", rank: "MAJ", avatar: "🛠️", color: "#00ff41", level: "CGSC" },
+      { id: 18, name: "Rodriguez", role: "Engineer NCO", rank: "SFC", avatar: "🛠️", color: "#ffb300", level: "NCO Battle Staff" },
+      { id: 19, name: "Ellis", role: "Support Operations Officer (SPO)", rank: "MAJ", avatar: "📦", color: "#00a32a", level: "CGSC" },
+      { id: 20, name: "Carter", role: "Support Operations NCO (SPO)", rank: "MSG", avatar: "📦", color: "#ffb300", level: "NCO Battle Staff" },
+      { id: 21, name: "Ramirez", role: "G Staff Lead", rank: "COL", avatar: "⭐", color: "#00ff41", level: "War College" },
+      { id: 22, name: "Hayes", role: "Staff Judge Advocate (SJA)", rank: "LTC", avatar: "⚖️", color: "#ffb300", level: "War College" },
+      { id: 23, name: "Morgan", role: "Surgeon", rank: "COL", avatar: "🩺", color: "#00a32a", level: "War College" },
+      { id: 24, name: "Walker", role: "Senior NCO", rank: "1SG", avatar: "🪖", color: "#ffb300", level: "NCO Battle Staff / CSM Course" }
     ];
 
     let chatMessages = [];
@@ -889,6 +900,7 @@
     let uploadedDocumentContent = null;
     let chatInitialized = false;
     let currentWeatherData = null;
+    let currentPlacematMapImage = null;
 
     // ====================== NATO APP-6 / MIL-STD-2525E SYMBOL ENGINE ======================
     const FM102_FRAMES = {
@@ -1046,6 +1058,7 @@
     addGridLines();
 
     let placedMarkers = [];
+    let controlLayers = [];
     let markerIdCounter = 0;
 
     map.on('mousemove', (e) => {
@@ -1105,6 +1118,17 @@
       }
     }
 
+    function sanitizeMap() {
+      if (confirm('Sanitize tactical map? This will clear all symbols and control measures.')) {
+        placedMarkers.forEach(m => m.marker.remove());
+        placedMarkers = [];
+        controlLayers.forEach(layer => layer.remove());
+        controlLayers = [];
+        updateMarkersList();
+        addChatMessage(7, `S3/G3: Tactical map sanitized.`, false);
+      }
+    }
+
     function updateMarkersList() {
       const list = document.getElementById('markers-list');
       document.getElementById('marker-count').textContent = placedMarkers.length;
@@ -1153,11 +1177,12 @@
       const h = (bounds.getNorth() - bounds.getSouth()) * 0.25;
       let feature;
       if (['aoo','objective','assembly-area'].includes(type)) {
-        feature = L.polygon([[midLat + h, midLng - w],[midLat + h, midLng + w],[midLat - h, midLng + w],[midLat - h, midLng - w]], { ...style, fillColor: style.color });
+        feature = L.polygon([[midLat + h, midLng - w],[midLat + h, midLng + w],[midLat - h, midLng + w],[midLat - h, midLng - w]], { ...style, fillColor: style.color, draggable: true });
       } else {
-        feature = L.polyline([[midLat + (type === 'axis' ? h*0.5 : 0), midLng - w],[midLat, midLng],[midLat + (type === 'axis' ? -h*0.5 : 0), midLng + w]], style);
+        feature = L.polyline([[midLat + (type === 'axis' ? h*0.5 : 0), midLng - w],[midLat, midLng],[midLat + (type === 'axis' ? -h*0.5 : 0), midLng + w]], { ...style, draggable: true });
       }
       feature.addTo(map).bindPopup(`<strong>${label}</strong><br>NATO APP-6 / MIL-STD-2525E Control Measure`).openPopup();
+      controlLayers.push(feature);
       L.marker([(bounds.getSouth() + bounds.getNorth())/2, midLng], { icon: L.divIcon({ className: '', html: `<div style="color:${style.color};font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2px;white-space:nowrap;text-shadow:0 0 4px #000;font-weight:700;">${label.toUpperCase()}</div>`, iconAnchor: [50, 10] }) }).addTo(map);
       if (document.getElementById('staff-chat-tab').classList.contains('active')) addChatMessage(7, `S3/G3: NATO APP-6 / MIL-STD-2525E ${label} control measure plotted on overlay.`, false);
     }
@@ -1198,8 +1223,10 @@
               <ul id="placemat-impacts"></ul>
             </div>
             <div class="panel map-panel">
-              <div class="panel-title">AO Map – Current COP (Live Overlay)</div>
-              <div id="placemat-map-placeholder" class="map-placeholder" style="background:#111;color:#0f0;">LIVE TACTICAL OVERLAY SYNCED FROM MAP TAB<br><small>NATO APP-6 / MIL-STD-2525E</small></div>
+              <div class="panel-title">AO Map – Current COP (LIVE OVERLAY)</div>
+              <div id="placemat-map-placeholder" class="map-placeholder">
+                ${currentPlacematMapImage ? `<img src="${currentPlacematMapImage}" style="width:100%;height:100%;object-fit:cover;">` : 'LIVE TACTICAL OVERLAY SYNCED FROM MAP<br><small>NATO APP-6 / MIL-STD-2525E</small>'}
+              </div>
             </div>
             <div class="panel">
               <div class="panel-title">24–72 Hour Outlook – MDMP Output</div>
@@ -1246,6 +1273,16 @@
       win.document.write(`<html><head><title>Commander’s Placemat — ${currentEchelon}</title><style>body{margin:0;padding:20px;font-family:Calibri,Arial,sans-serif;}</style></head><body>${content}</body></html>`);
       win.document.close();
       setTimeout(() => win.print(), 600);
+    }
+
+    function syncMapToPlacemat() {
+      const mapDiv = document.getElementById('map');
+      html2canvas(mapDiv, { scale: 2 }).then(canvas => {
+        currentPlacematMapImage = canvas.toDataURL('image/png');
+        renderPlacemat(currentPlacematVariant);
+        switchTab('placemat-tab', document.querySelector('.tab-btn[onclick*="placemat-tab"]'));
+        addChatMessage(7, `S3/G3: Tactical map / AO synced to Commander’s Placemat (NATO APP-6 / MIL-STD-2525E).`, false);
+      });
     }
 
     // ====================== TAB SWITCHING ======================
@@ -1372,7 +1409,7 @@
       }
     }
 
-    // ====================== MDMP & OPORD (unchanged) ======================
+    // ====================== MDMP & OPORD ======================
     function startMDMP(fromChat = false) {
       if (!fromChat) switchTab('staff-chat-tab', document.querySelector('.tab-btn[onclick*="staff-chat-tab"]'));
       addChatMessage(1, `XO (War College): Mission received. Full staff initiating MDMP (FM 5-0 / CGSC doctrine).`, false);
@@ -1451,13 +1488,12 @@
       alert("✅ PREMIUM UNLOCKED — Full features active.");
     }
 
-    // ====================== WEATHER TAB & S2 FORECAST ======================
+    // ====================== WEATHER ======================
     async function getWeatherForecast() {
       const locationInput = document.getElementById('weather-location').value.trim();
       const resultDiv = document.getElementById('weather-result');
       resultDiv.innerHTML = `<strong>S2/G2 (CGSC):</strong> Fetching current + 5-day forecast for <em>${locationInput}</em>...`;
 
-      // Mock realistic forecast (Open-Meteo API could be used in production)
       const mockForecasts = {
         '48197': { current: '68°F, Clear', day1: '72°F / 52°F, Sunny', day2: '70°F / 55°F, Partly Cloudy', day3: '65°F / 48°F, Showers', day4: '62°F / 45°F, Cloudy', day5: '68°F / 50°F, Sunny' },
         'ypsilanti': { current: '68°F, Clear', day1: '72°F / 52°F, Sunny', day2: '70°F / 55°F, Partly Cloudy', day3: '65°F / 48°F, Showers', day4: '62°F / 45°F, Cloudy', day5: '68°F / 50°F, Sunny' },
@@ -1508,7 +1544,7 @@
       setInterval(updateClock, 1000);
       updateClock();
 
-      console.log('%c✅ OpsForge fully upgraded with dedicated WEATHER tab, S2 current + 5-day forecast, Placemat integration, and NATO APP-6 / MIL-STD-2525E standardization', 'color:#00ff41;font-family:monospace');
+      console.log('%c✅ OpsForge fully upgraded with clean staff bot ranks, draggable control measures, North Arrow, and live tactical map sync to placemat', 'color:#00ff41;font-family:monospace');
     });
   </script>
 </body>
