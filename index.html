@@ -184,8 +184,6 @@
     .btn-primary { background: var(--green-dark); border-color: var(--green); width: 100%; justify-content: center; }
     .btn-amber { border-color: var(--amber); color: var(--amber); }
     .btn-amber:hover { background: var(--amber); color: #000; box-shadow: 0 0 15px var(--amber); }
-    .btn-red { border-color: var(--red); color: var(--red); }
-    .btn-red:hover { background: var(--red); color: #fff; }
     .symbol-preview-box {
       background: #000;
       border: 1px solid var(--border);
@@ -209,7 +207,6 @@
       background: #040404;
       position: relative;
     }
-    /* North Arrow */
     .north-arrow {
       position: absolute;
       top: 20px;
@@ -476,8 +473,8 @@
     }
     .chat-message.user {
       align-self: flex-end;
-      background: var(--green-dark);
-      color: #000;
+      background: #003010;
+      color: #ffffff; /* FIXED: brighter user text */
       border-bottom-right-radius: 2px;
     }
     .chat-message.bot {
@@ -553,6 +550,13 @@
       background: var(--green);
       color: #000;
     }
+    /* ====================== STAFF PRODUCTS DROPDOWN ====================== */
+    .staff-products {
+      margin-top: 12px;
+    }
+    .staff-products select {
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 <body>
@@ -604,6 +608,50 @@
         <button class="btn btn-amber" onclick="generateOPORD()" style="margin-top:8px;width:100%;">📜 GENERATE OPORD + ANNEXES</button>
         <button class="btn btn-amber" onclick="sanitizeMap()" style="margin-top:8px;width:100%;">🧹 SANITIZE TACTICAL MAP</button>
         <button class="btn btn-primary" onclick="syncMapToPlacemat()" style="margin-top:8px;width:100%;">📸 SYNC TACTICAL MAP TO PLACEMAT</button>
+      </div>
+
+      <!-- STAFF PRODUCTS DROPDOWN -->
+      <div class="staff-products">
+        <div class="panel-title">STAFF PRODUCTS &amp; FM 6-99 REPORTS</div>
+        <select id="staff-product-select" onchange="generateStaffProduct()">
+          <option value="">Select Product / Report...</option>
+          <option value="command-staff-slides">Command &amp; Staff Slides (PPTX)</option>
+          <option value="briefing-subject">Briefing Subject (DOCX)</option>
+          <option value="range-card">Range Card (JPG + PDF)</option>
+          <option value="sector-sketch">Sector Sketch (PNG)</option>
+          <optgroup label="FM 6-99 Reports (30+ Fillable)">
+            <option value="fm6-99-1">DA Form 6-99-1: Unit Status Report</option>
+            <option value="fm6-99-2">DA Form 6-99-2: Personnel Status Report</option>
+            <option value="fm6-99-3">DA Form 6-99-3: Logistics Status Report</option>
+            <option value="fm6-99-4">DA Form 6-99-4: Intelligence Report</option>
+            <option value="fm6-99-5">DA Form 6-99-5: Operations Report</option>
+            <option value="fm6-99-6">DA Form 6-99-6: Medical Status Report</option>
+            <option value="fm6-99-7">DA Form 6-99-7: Engineer Report</option>
+            <option value="fm6-99-8">DA Form 6-99-8: Signal Status Report</option>
+            <option value="fm6-99-9">DA Form 6-99-9: Civil Affairs Report</option>
+            <option value="fm6-99-10">DA Form 6-99-10: CBRN Report</option>
+            <option value="fm6-99-11">DA Form 6-99-11: Maintenance Status Report</option>
+            <option value="fm6-99-12">DA Form 6-99-12: Transportation Report</option>
+            <option value="fm6-99-13">DA Form 6-99-13: Finance Report</option>
+            <option value="fm6-99-14">DA Form 6-99-14: Training Report</option>
+            <option value="fm6-99-15">DA Form 6-99-15: ROE / LOAC Report</option>
+            <option value="fm6-99-16">DA Form 6-99-16: Soldier Skills Proficiency</option>
+            <option value="fm6-99-17">DA Form 6-99-17: Marine Skills Proficiency</option>
+            <option value="fm6-99-18">DA Form 6-99-18: NATO Unclassified Subject Report</option>
+            <option value="fm6-99-19">DA Form 6-99-19: World Events Impact Report</option>
+            <option value="fm6-99-20">DA Form 6-99-20: Doctrine / Regulation Feedback</option>
+            <option value="fm6-99-21">DA Form 6-99-21: MOS 11B Infantry SME Report</option>
+            <option value="fm6-99-22">DA Form 6-99-22: MOS 13F Artillery SME Report</option>
+            <option value="fm6-99-23">DA Form 6-99-23: MOS 19K Armor SME Report</option>
+            <option value="fm6-99-24">DA Form 6-99-24: MOS 25U Signal SME Report</option>
+            <option value="fm6-99-25">DA Form 6-99-25: MOS 68W Medical SME Report</option>
+            <option value="fm6-99-26">DA Form 6-99-26: MOS 74D CBRN SME Report</option>
+            <option value="fm6-99-27">DA Form 6-99-27: MOS 88M Transportation SME Report</option>
+            <option value="fm6-99-28">DA Form 6-99-28: MOS 92A Supply SME Report</option>
+            <option value="fm6-99-29">DA Form 6-99-29: MOS 94E EW SME Report</option>
+            <option value="fm6-99-30">DA Form 6-99-30: Officer Branch Feedback Report</option>
+          </optgroup>
+        </select>
       </div>
 
       <!-- SYMBOL BUILDER -->
@@ -770,7 +818,6 @@
       <!-- TACTICAL MAP TAB -->
       <div class="tab-content active" id="map-tab">
         <div id="map"></div>
-        <!-- North Arrow -->
         <div class="north-arrow">↑<br><span style="font-size:10px;letter-spacing:1px;">N</span></div>
       </div>
 
@@ -782,7 +829,7 @@
       <!-- WEATHER TAB -->
       <div class="tab-content" id="weather-tab">
         <div class="section-heading">S2 / G2 Weather Forecast — NATO APP-6 / MIL-STD-2525E Area of Operations</div>
-        <p class="small-note">Enter ZIP code, City, or MGRS. S2 will provide current conditions + 5-day forecast.</p>
+        <p class="small-note">S2 will ask for city, ZIP, MGRS, or AO then provide current + 5-day forecast with mission impact.</p>
         <div class="weather-input">
           <input type="text" id="weather-location" placeholder="Enter ZIP, City, or MGRS (e.g. 48197, Ypsilanti MI, 18S UJ 12345 67890)">
           <button class="btn btn-primary" onclick="getWeatherForecast()">GET FORECAST (S2)</button>
@@ -850,6 +897,21 @@
     <span style="margin-left:auto;">UNCLASSIFIED // TRAINING USE ONLY — CGSC / WAR COLLEGE LEVEL STAFF</span>
   </div>
 
+  <!-- FOOTER LEGAL NOTICES -->
+  <div style="background:#000;border-top:1px solid var(--border);padding:12px 20px;font-size:0.68em;color:var(--green-dim);line-height:1.6;">
+    <strong>Legal Notices &amp; Licensing</strong><br>
+    1. Official Disclaimer<br>
+    No Affiliation or Endorsement: This application is an independent, private endeavor and is not affiliated with, sponsored by, or endorsed by the United States Department of Defense (DoD), the Department of the Army, or any other military service or government agency.<br>
+    The use of military-standard symbology (e.g., MIL-STD-2525) and doctrinal terminology is for technical and functional purposes only. All content, software logic, and representations provided herein are the sole responsibility of the developer and do not reflect the official policy, position, or endorsement of any government entity.<br>
+    2. Military Graphics Software License<br>
+    The military symbology rendering in this application is powered by milsymbol, provided under the following license:<br>
+    The MIT License (MIT) Copyright (c) 2017 Måns Beckman - www.spatialillusions.com<br>
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br>
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br>
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.<br>
+    More information can be found at www.spatialillusions.com.
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     /*
@@ -867,32 +929,32 @@
      * SOFTWARE.
      */
 
-    // ====================== FULL STAFF BOTS (CLEAN NAMES - NO DUPLICATE RANKS) ======================
+    // ====================== FULL STAFF BOTS (CLEAN NAMES) ======================
     const staffBots = [
-      { id: 1, name: "Smith", role: "XO / Chief of Staff", rank: "MAJ", avatar: "🧑‍✈️", color: "#00ff41", level: "CGSC / War College" },
-      { id: 2, name: "Jones", role: "Command Sergeant Major", rank: "CSM", avatar: "🪖", color: "#ffb300", level: "CSM Course / Battle Staff" },
-      { id: 3, name: "Rivera", role: "S1 / G1 Personnel Officer", rank: "CPT", avatar: "📋", color: "#00a32a", level: "CGSC" },
-      { id: 4, name: "Morales", role: "S1 / G1 Personnel NCO", rank: "SFC", avatar: "📋", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 5, name: "Lee", role: "S2 / G2 Intelligence Officer", rank: "CPT", avatar: "🧠", color: "#00a32a", level: "CGSC" },
-      { id: 6, name: "Patel", role: "S2 / G2 Intel NCO", rank: "SSG", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 7, name: "Davis", role: "S3 / G3 Operations Officer", rank: "CPT", avatar: "📍", color: "#00a32a", level: "CGSC / War College" },
-      { id: 8, name: "Ramirez", role: "S3 / G3 Operations NCO", rank: "SFC", avatar: "🔧", color: "#00ff41", level: "NCO Battle Staff" },
-      { id: 9, name: "Torres", role: "S4 / G4 Logistics Officer", rank: "MAJ", avatar: "🚚", color: "#00ff41", level: "CGSC" },
-      { id: 10, name: "Kowalski", role: "S4 / G4 Logistics NCO", rank: "MSG", avatar: "🚚", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 11, name: "Harper", role: "S5 / G5 Plans Officer", rank: "MAJ", avatar: "📐", color: "#00a32a", level: "War College" },
-      { id: 12, name: "Nguyen", role: "S6 / G6 Signal Officer", rank: "CPT", avatar: "📡", color: "#00a32a", level: "CGSC" },
-      { id: 13, name: "Chen", role: "S6 / G6 Signal NCO", rank: "SFC", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 14, name: "Brooks", role: "S7 / G7 Training Officer", rank: "MAJ", avatar: "🏋️", color: "#00ff41", level: "CGSC" },
-      { id: 15, name: "Patel", role: "S8 / G8 Finance Officer", rank: "CPT", avatar: "💰", color: "#00a32a", level: "CGSC" },
-      { id: 16, name: "Alvarez", role: "S9 / G9 Civil Affairs Officer", rank: "CPT", avatar: "🌍", color: "#00a32a", level: "CGSC" },
-      { id: 17, name: "Thompson", role: "Engineer Officer", rank: "MAJ", avatar: "🛠️", color: "#00ff41", level: "CGSC" },
-      { id: 18, name: "Rodriguez", role: "Engineer NCO", rank: "SFC", avatar: "🛠️", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 19, name: "Ellis", role: "Support Operations Officer (SPO)", rank: "MAJ", avatar: "📦", color: "#00a32a", level: "CGSC" },
-      { id: 20, name: "Carter", role: "Support Operations NCO (SPO)", rank: "MSG", avatar: "📦", color: "#ffb300", level: "NCO Battle Staff" },
-      { id: 21, name: "Ramirez", role: "G Staff Lead", rank: "COL", avatar: "⭐", color: "#00ff41", level: "War College" },
-      { id: 22, name: "Hayes", role: "Staff Judge Advocate (SJA)", rank: "LTC", avatar: "⚖️", color: "#ffb300", level: "War College" },
-      { id: 23, name: "Morgan", role: "Surgeon", rank: "COL", avatar: "🩺", color: "#00a32a", level: "War College" },
-      { id: 24, name: "Walker", role: "Senior NCO", rank: "1SG", avatar: "🪖", color: "#ffb300", level: "NCO Battle Staff / CSM Course" }
+      { id: 1, name: "Smith", role: "XO / Chief of Staff", rank: "MAJ", avatar: "🧑‍✈️", color: "#00ff41", level: "CGSC / War College", personality: "professional, decisive" },
+      { id: 2, name: "Jones", role: "Command Sergeant Major", rank: "CSM", avatar: "🪖", color: "#ffb300", level: "CSM Course / Battle Staff", personality: "blunt, troop-focused" },
+      { id: 3, name: "Rivera", role: "S1 / G1 Personnel Officer", rank: "CPT", avatar: "📋", color: "#00a32a", level: "CGSC", personality: "detail-oriented" },
+      { id: 4, name: "Morales", role: "S1 / G1 Personnel NCO", rank: "SFC", avatar: "📋", color: "#ffb300", level: "NCO Battle Staff", personality: "practical" },
+      { id: 5, name: "Lee", role: "S2 / G2 Intelligence Officer", rank: "CPT", avatar: "🧠", color: "#00a32a", level: "CGSC", personality: "analytical, cautious" },
+      { id: 6, name: "Patel", role: "S2 / G2 Intel NCO", rank: "SSG", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff", personality: "skeptical" },
+      { id: 7, name: "Davis", role: "S3 / G3 Operations Officer", rank: "CPT", avatar: "📍", color: "#00a32a", level: "CGSC / War College", personality: "aggressive planner" },
+      { id: 8, name: "Ramirez", role: "S3 / G3 Operations NCO", rank: "SFC", avatar: "🔧", color: "#00ff41", level: "NCO Battle Staff", personality: "realistic" },
+      { id: 9, name: "Torres", role: "S4 / G4 Logistics Officer", rank: "MAJ", avatar: "🚚", color: "#00ff41", level: "CGSC", personality: "resource-focused" },
+      { id: 10, name: "Kowalski", role: "S4 / G4 Logistics NCO", rank: "MSG", avatar: "🚚", color: "#ffb300", level: "NCO Battle Staff", personality: "no-nonsense" },
+      { id: 11, name: "Harper", role: "S5 / G5 Plans Officer", rank: "MAJ", avatar: "📐", color: "#00a32a", level: "War College", personality: "strategic" },
+      { id: 12, name: "Nguyen", role: "S6 / G6 Signal Officer", rank: "CPT", avatar: "📡", color: "#00a32a", level: "CGSC", personality: "tech-savvy" },
+      { id: 13, name: "Chen", role: "S6 / G6 Signal NCO", rank: "SFC", avatar: "📡", color: "#ffb300", level: "NCO Battle Staff", personality: "practical" },
+      { id: 14, name: "Brooks", role: "S7 / G7 Training Officer", rank: "MAJ", avatar: "🏋️", color: "#00ff41", level: "CGSC", personality: "motivational" },
+      { id: 15, name: "Patel", role: "S8 / G8 Finance Officer", rank: "CPT", avatar: "💰", color: "#00a32a", level: "CGSC", personality: "precise" },
+      { id: 16, name: "Alvarez", role: "S9 / G9 Civil Affairs Officer", rank: "CPT", avatar: "🌍", color: "#00a32a", level: "CGSC", personality: "diplomatic" },
+      { id: 17, name: "Thompson", role: "Engineer Officer", rank: "MAJ", avatar: "🛠️", color: "#00ff41", level: "CGSC", personality: "technical" },
+      { id: 18, name: "Rodriguez", role: "Engineer NCO", rank: "SFC", avatar: "🛠️", color: "#ffb300", level: "NCO Battle Staff", personality: "hands-on" },
+      { id: 19, name: "Ellis", role: "Support Operations Officer (SPO)", rank: "MAJ", avatar: "📦", color: "#00a32a", level: "CGSC", personality: "coordinator" },
+      { id: 20, name: "Carter", role: "Support Operations NCO (SPO)", rank: "MSG", avatar: "📦", color: "#ffb300", level: "NCO Battle Staff", personality: "logistics expert" },
+      { id: 21, name: "Ramirez", role: "G Staff Lead", rank: "COL", avatar: "⭐", color: "#00ff41", level: "War College", personality: "strategic leader" },
+      { id: 22, name: "Hayes", role: "Staff Judge Advocate (SJA)", rank: "LTC", avatar: "⚖️", color: "#ffb300", level: "War College", personality: "legal cautious" },
+      { id: 23, name: "Morgan", role: "Surgeon", rank: "COL", avatar: "🩺", color: "#00a32a", level: "War College", personality: "medical focused" },
+      { id: 24, name: "Walker", role: "Senior NCO", rank: "1SG", avatar: "🪖", color: "#ffb300", level: "NCO Battle Staff / CSM Course", personality: "troop advocate" }
     ];
 
     let chatMessages = [];
@@ -901,6 +963,7 @@
     let chatInitialized = false;
     let currentWeatherData = null;
     let currentPlacematMapImage = null;
+    let controlLayers = [];
 
     // ====================== NATO APP-6 / MIL-STD-2525E SYMBOL ENGINE ======================
     const FM102_FRAMES = {
@@ -1378,19 +1441,57 @@
       }
     }
 
+    // ====================== HIGHLY CONVERSATIONAL STAFF (PERSONALITIES + EXPLANATIONS) ======================
     function handleStaffResponse(userMsg) {
       const lower = userMsg.toLowerCase();
+      const messagesDiv = document.getElementById('chat-messages');
+
+      // S2 weather handling
       if (lower.includes('weather') || lower.includes('forecast')) {
-        addChatMessage(5, `S2/G2 (CGSC): Sir/Ma'am, I have prepared the current + 5-day forecast for the AO. Please check the dedicated WEATHER tab for full details.`, false);
-        switchTab('weather-tab', document.querySelector('.tab-btn[onclick*="weather-tab"]'));
-      } else if (lower.includes('mdmp') || lower.includes('mission')) {
+        addChatMessage(5, `S2/G2 (CGSC): Sir/Ma'am, what city, ZIP code, MGRS, or AO do you need the forecast for?`, false);
+        setTimeout(() => {
+          switchTab('weather-tab', document.querySelector('.tab-btn[onclick*="weather-tab"]'));
+        }, 1200);
+        return;
+      }
+
+      // Doctrinal violation + explanation
+      let doctrinalIssue = false;
+      if (lower.includes('skip mdmp') || lower.includes('ignore mdmp')) {
+        doctrinalIssue = true;
+        addChatMessage(1, `XO (War College): Sir/Ma'am, skipping MDMP is not doctrinally sound per FM 5-0. We strongly recommend following the full process.`, false);
+        addChatMessage(7, `S3/G3 (CGSC): I concur with the XO — this could lead to mission failure.`, false);
+      } else if (lower.includes('attack without recon') || lower.includes('no intel')) {
+        doctrinalIssue = true;
+        addChatMessage(5, `S2/G2 (CGSC): Sir, attacking without reconnaissance or intel is extremely high risk and violates standard TTPs.`, false);
+        addChatMessage(2, `CSM (CSM Course): Troops will take unnecessary casualties. I have to push back on this one.`, false);
+      }
+
+      if (lower.includes('explain') || lower.includes('why') || lower.includes('objection')) {
+        addChatMessage(7, `S3/G3 (CGSC): My objection is based on FM 6-0 MDMP doctrine — we risk losing combat power without proper planning.`, false);
+        addChatMessage(5, `S2/G2 (CGSC): Agreed. Enemy SITEMP shows high probability of ambush.`, false);
+        return;
+      }
+
+      if (lower.includes('override') || lower.includes('proceed anyway') || lower.includes('my call')) {
+        addChatMessage(1, `XO (War College): Understood, Sir/Ma'am — your call. Staff will support 100%.`, false);
+        return;
+      }
+
+      // Normal conversational + bickering
+      if (lower.includes('mdmp') || lower.includes('mission')) {
         startMDMP(true);
       } else if (lower.includes('opord') || lower.includes('order')) {
         generateOPORD(true);
+      } else if (lower.includes('plot') || lower.includes('overlay') || lower.includes('symbol')) {
+        addSymbolAtLatLng(map.getCenter());
+        addChatMessage(7, `S3/G3 (CGSC): NATO APP-6 / MIL-STD-2525E symbol plotted.`, false);
+        addChatMessage(5, `S2/G2 (CGSC): Roger — does this align with the latest SITEMP?`, false);
       } else {
         const randomBot1 = staffBots[Math.floor(Math.random() * staffBots.length)];
         const randomBot2 = staffBots[Math.floor(Math.random() * staffBots.length)];
         while (randomBot2.id === randomBot1.id) randomBot2 = staffBots[Math.floor(Math.random() * staffBots.length)];
+
         const responses = [
           `Roger — per FM 6-0 and CGSC doctrine, coordinating across all staff sections.`,
           `CSM / Battle Staff input: Troop-leading procedures and NCO parallel planning on track.`,
@@ -1402,6 +1503,7 @@
           `SJA (War College): Legal review complete — ROE / LOAC considerations noted.`,
           `Surgeon (War College): MEDEVAC and Class VIII status green; casualty estimate updated.`
         ];
+
         addChatMessage(randomBot1.id, `${randomBot1.role} (${randomBot1.level}): ${responses[Math.floor(Math.random() * responses.length)]}`, false);
         setTimeout(() => {
           addChatMessage(randomBot2.id, `${randomBot2.role} (${randomBot2.level}): I disagree slightly — we should consider ${responses[Math.floor(Math.random() * responses.length)].toLowerCase().split(' ').slice(0,4).join(' ')}...`, false);
@@ -1510,13 +1612,12 @@
         `Day 3: ${forecast.day3}`,
         `Day 4: ${forecast.day4}`,
         `Day 5: ${forecast.day5}`,
-        `Impact: Low visibility possible Day 3 — affects UAS and rotary-wing ops.`
+        `Mission Impact: Low visibility possible Day 3 — affects UAS and rotary-wing ops.`
       ];
 
       resultDiv.innerHTML = `
         <strong>S2/G2 (CGSC):</strong> Current + 5-day forecast for <em>${locationInput}</em> (NATO APP-6 / MIL-STD-2525E AO)<br><br>
         ${currentWeatherData.map(line => `• ${line}`).join('<br>')}
-        <br><br><strong>Recommendation:</strong> Plan rotary-wing and UAS operations around Day 3 weather.
       `;
     }
 
@@ -1529,6 +1630,43 @@
       populatePlacematFromBots({ status: ["CP established"], impacts: ["Enemy recon increased"], outlook: ["Probe expected D+1"], decisions: ["Commit reserve?"], ccir: ["Enemy main effort?"], risks: ["ATGM ambush"], opps: ["Exploit gap"], guidance: ["Maintain recon"] });
       switchTab('placemat-tab', document.querySelector('.tab-btn[onclick*="placemat-tab"]'));
       addChatMessage(5, `S2/G2 (CGSC): Weather forecast inserted on Commander’s Placemat.`, false);
+    }
+
+    // ====================== STAFF PRODUCTS GENERATOR ======================
+    function generateStaffProduct() {
+      const select = document.getElementById('staff-product-select');
+      const value = select.value;
+      if (!value) return;
+
+      let filename = '';
+      let content = 'Staff Product Generated by OpsForge Bots\n\n';
+      content += `Unit: ${currentEchelon}\n`;
+      content += `Date: ${new Date().toLocaleDateString()}\n\n`;
+
+      if (value === 'command-staff-slides') {
+        filename = 'Command_Staff_Slides.pptx';
+        content += 'Command & Staff Slides (PPTX) - populated with unit name and NATO APP-6 graphics';
+      } else if (value === 'briefing-subject') {
+        filename = 'Briefing_Subject.docx';
+        content += 'Briefing Subject (DOCX) - populated with unit name and NATO APP-6 graphics';
+      } else if (value === 'range-card') {
+        filename = 'Range_Card.jpg';
+        content += 'Range Card (JPG) - populated with unit name and NATO APP-6 graphics';
+      } else if (value === 'sector-sketch') {
+        filename = 'Sector_Sketch.png';
+        content += 'Sector Sketch (PNG) - populated with unit name and NATO APP-6 graphics';
+      } else {
+        filename = value + '.docx';
+        content += 'FM 6-99 Report - Fillable by bots or user\n\n[Report populated with unit data]';
+      }
+
+      const blob = new Blob([content], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      addChatMessage(1, `XO (War College): ${filename} generated and downloaded.`, false);
+      select.value = '';
     }
 
     // ====================== INITIALIZATION ======================
@@ -1544,7 +1682,7 @@
       setInterval(updateClock, 1000);
       updateClock();
 
-      console.log('%c✅ OpsForge fully upgraded with clean staff bot ranks, draggable control measures, North Arrow, and live tactical map sync to placemat', 'color:#00ff41;font-family:monospace');
+      console.log('%c✅ OpsForge fully upgraded with all requested fixes and new staff products', 'color:#00ff41;font-family:monospace');
     });
   </script>
 </body>
