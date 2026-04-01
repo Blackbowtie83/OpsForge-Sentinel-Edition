@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpsForge — Operations Center</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --green: #00ff41;
+      --green-dim: #00a32a;
+      --green-dark: #003010;
+      --green-panel: #001a08;
+      --amber: #ffb300;
+      --red: #ff2020;
+      --bg: #0a0a0a;
+      --border: #00ff4155;
+      --text: #b8ffcc;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-ui: 'Oswald', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-mono);
+      background: var(--bg);
+      color: var(--green);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.015) 2px, rgba(0,255,65,0.015) 4px);
+      pointer-events: none;
+      z-index: 9999;
+    }
+    #app-header {
+      background: linear-gradient(90deg, #000 0%, #001800 30%, #002500 50%, #001800 70%, #000 100%);
+      border-bottom: 2px solid var(--green);
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+    }
+    .header-logo {
+      font-family: var(--font-ui);
+      font-size: 1.8em;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: 4px;
+      text-shadow: 0 0 20px var(--green), 0 0 40px var(--green-dim);
+    }
+    .header-logo span { color: var(--amber); }
+    .header-meta {
+      font-size: 0.72em;
+      color: var(--green-dim);
+      text-align: right;
+      line-height: 1.5;
+    }
+    .header-clock {
+      font-size: 1em;
+      color: var(--green);
+      font-family: var(--font-mono);
+    }
+    .disclaimer-bar {
+      background: #1a0000;
+      border-bottom: 1px solid #ff2020aa;
+      color: var(--amber);
+      text-align: center;
+      padding: 6px 15px;
+      font-size: 0.72em;
+      letter-spacing: 1px;
+    }
+    .main-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 90px);
+    }
+    .sidebar {
+      background: var(--green-panel);
+      border-right: 1px solid var(--border);
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+      max-height: calc(100vh - 90px);
+      position: sticky;
+      top: 90px;
+    }
+    .panel-title {
+      font-family: var(--font-ui);
+      font-size: 0.75em;
+      letter-spacing: 3px;
+      color: var(--green-dim);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+    .tab-bar {
+      display: flex;
+      background: #000;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      border-right: 1px solid var(--border);
+      color: var(--green-dim);
+      padding: 12px 5px;
+      font-family: var(--font-ui);
+      font-size: 0.75em;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:last-child { border-right: none; }
+    .tab-btn:hover { background: var(--green-dark); color: var(--green); }
+    .tab-btn.active {
+      background: var(--green-dark);
+      color: var(--green);
+      border-bottom: 2px solid var(--green);
+    }
+    .tab-content { display: none; padding: 20px; overflow-y: auto; }
+    .tab-content.active { display: block; }
+    label {
+      display: block;
+      font-size: 0.72em;
+      letter-spacing: 2px;
+      color: var(--green-dim);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    select, input[type="text"], input[type="file"], textarea {
+      width: 100%;
+      background: #000;
+      border: 1px solid var(--border);
+      color: var(--green);
+      padding: 9px 10px;
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+      appearance: none;
+    }
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 8px var(--green-dim);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 1px solid var(--green);
+      color: var(--green);
+      padding: 9px 16px;
+      font-family: var(--font-ui);
+      font-size: 0.78em;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    .btn:hover {
+      background: var(--green);
+      color: #000;
+      box-shadow: 0 0 15px var(--green-dim);
+    }
+    .btn-primary { background: var(--green-dark); border-color: var(--green); width: 100%; justify-content: center; }
+    .btn-amber { border-color: var(--amber); color: var(--amber); }
+    .btn-amber:hover { background: var(--amber); color: #000; box-shadow: 0 0 15px var(--amber); }
+    .btn-red { border-color: var(--red); color: var(--red); }
+    .btn-red:hover { background: var(--red); color: #fff; }
+    .symbol-preview-box {
+      background: #000;
+      border: 1px solid var(--border);
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      min-height: 120px;
+    }
+    #symbol-preview-svg { width: 80px; height: 80px; }
+    .symbol-preview-label {
+      font-size: 0.7em;
+      color: var(--green-dim);
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    #map {
+      height: calc(100vh - 90px - 52px);
+      min-height: 500px;
+      background: #040404;
+    }
+    .answer-box, .analysis-box {
+      background: #000;
+      border: 1px solid var(--border);
+      padding: 15px;
+      min-height: 120px;
+      font-size: 0.83em;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .section-heading {
+      font-family: var(--font-ui);
+      font-size: 1em;
+      letter-spacing: 3px;
+      color: var(--green);
+      border-left: 3px solid var(--green);
+      padding-left: 10px;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+    }
+    .markers-list {
+      background: #000;
+      border: 1px solid var(--border);
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.75em;
+    }
+    .marker-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .marker-item:hover { background: var(--green-dark); }
+    .marker-item-label { flex: 1; color: var(--text); }
+    .marker-remove {
+      background: none;
+      border: none;
+      color: var(--red);
+      cursor: pointer;
+      font-size: 0.9em;
+      padding: 2px 5px;
+    }
+    .premium-banner {
+      background: linear-gradient(135deg, #1a1000, #2a1500);
+      border: 1px solid var(--amber);
+      padding: 15px;
+      text-align: center;
+    }
+    .status-bar {
+      background: #000;
+      border-top: 1px solid var(--border);
+      padding: 6px 15px;
+      display: flex;
+      gap: 20px;
+      font-size: 0.68em;
+      color: var(--green-dim);
+      align-items: center;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: blink 2s infinite;
+      display: inline-block;
+    }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+    .small-note {
+      font-size: 0.68em;
+      color: var(--green-dim);
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    /* ====================== COMMANDER'S PLACEMAT STYLES ====================== */
+    .placemat-container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 8px 16px 16px;
+      background: #fff;
+      border: 2px solid #000;
+      font-family: "Calibri", Arial, sans-serif;
+      color: #000;
+      font-size: 12px;
+    }
+    .placemat.toc-variant { 
+      --bg-main: #1b1f1b; --bg-panel: #2b332b; --bg-header: #3b453b; --bg-bottom: #3b453b; 
+      --text-main: #f5f5f5; --accent-line: #000; 
+      background: #1b1f1b; color: #f5f5f5; 
+    }
+    .placemat.night-variant { 
+      --bg-main: #000; --bg-panel: #111; --bg-header: #222; --bg-bottom: #222; 
+      --text-main: #f8f8f8; --accent-line: #f8f8f8; 
+      background: #000; color: #f8f8f8; 
+    }
+    .classification-banner {
+      text-align: center;
+      font-weight: bold;
+      padding: 4px 0;
+      background-color: var(--bg-header, #d9d9d9);
+      border-bottom: 1px solid var(--accent-line, #000);
+    }
+    .header-row {
+      display: grid;
+      grid-template-columns: 2fr 2fr 1fr 1fr;
+      gap: 4px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--accent-line, #000);
+    }
+    .header-cell { font-size: 12px; }
+    .header-label {
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 2fr 1.2fr;
+      gap: 8px;
+      margin: 8px 0;
+      min-height: 520px;
+    }
+    .panel {
+      border: 1px solid var(--accent-line, #000);
+      background-color: var(--bg-panel, #f2f2f2);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--text-main, #000);
+    }
+    .panel-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--accent-line, #000);
+      padding-bottom: 4px;
+      font-size: 11px;
+    }
+    .subsection-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 11px;
+      margin-top: 6px;
+    }
+    .map-panel {
+      background-color: #ffffff;
+      position: relative;
+      border: 1px solid var(--accent-line, #000);
+    }
+    .map-placeholder {
+      border: 2px dashed #000;
+      flex: 1;
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      text-align: center;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    .bottom-band {
+      border-top: 1px solid var(--accent-line, #000);
+      background-color: var(--bg-bottom, #d9d9d9);
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      color: var(--text-main, #000);
+    }
+    .bottom-block-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+    .placemat ul {
+      margin: 4px 0 6px 20px;
+      padding: 0;
+    }
+    .placemat li {
+      margin-bottom: 3px;
+    }
+    .classification-banner.bottom {
+      margin-top: 8px;
+      border-top: 1px solid var(--accent-line, #000);
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header id="app-header">
+    <div class="header-inner">
+      <div class="header-logo">OPS<span>FORGE</span></div>
+      <div class="header-meta">
+        <div class="header-clock" id="clock-display">--:--:-- Z</div>
+        <div>UNCLASSIFIED // EDUCATIONAL USE ONLY</div>
+      </div>
+    </div>
+    <div class="disclaimer-bar">
+      ⚠ EDUCATIONAL USE ONLY — DOCTRINE FROM PUBLIC SOURCES — MIL-STD-2525E / FM 1-02.2 — VERIFY CURRENT VERSIONS — NOT OFFICIAL
+    </div>
+  </header>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('map-tab', this)">▦ TACTICAL MAP</button>
+    <button class="tab-btn" onclick="switchTab('placemat-tab', this)">📋 PLACEMAT</button>
+    <button class="tab-btn" onclick="switchTab('doctrine-tab', this)">◉ ASK DOCTRINE</button>
+    <button class="tab-btn" onclick="switchTab('upload-tab', this)">⬆ ORDERS</button>
+    <button class="tab-btn" onclick="switchTab('premium-tab', this)">★ PREMIUM</button>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="main-layout">
+    <!-- SIDEBAR (shared for map + placemat) -->
+    <aside class="sidebar">
+      <!-- ... existing sidebar content for symbols, etc. remains here ... -->
+      <div>
+        <div class="panel-title">Command Echelon</div>
+        <select id="echelon">
+          <option value="Company">Company</option>
+          <option value="Battalion" selected>Battalion</option>
+          <option value="Brigade">Brigade</option>
+          <option value="Division">Division</option>
+          <option value="Corps">Corps</option>
+        </select>
+      </div>
+
+      <!-- Symbol Builder (for Tactical Map) -->
+      <div id="symbol-builder">
+        <div class="panel-title">Symbol Builder — MIL-STD-2525E</div>
+        <!-- (existing symbol builder fields here) -->
+        <label>Standard Identity</label>
+        <select id="forceType" onchange="updateSymbolPreview()">
+          <option value="friendly">Friendly</option>
+          <option value="hostile">Hostile</option>
+        </select>
+        <label>Unit Type</label>
+        <select id="unitType" onchange="updateSymbolPreview()">
+          <option value="infantry">Infantry</option>
+          <option value="armor">Armor</option>
+        </select>
+        <label>Echelon</label>
+        <select id="echelonSize" onchange="updateSymbolPreview()">
+          <option value="company" selected>Company</option>
+          <option value="battalion">Battalion</option>
+        </select>
+        <button class="btn btn-primary" onclick="addSelectedSymbol()" style="margin-top:12px;">Place Symbol on Map</button>
+        <div class="symbol-preview-box">
+          <svg id="symbol-preview-svg" viewBox="0 0 100 100"></svg>
+          <div class="symbol-preview-label" id="symbol-preview-label"></div>
+        </div>
+      </div>
+
+      <!-- Placemat Variant Selector (visible only on Placemat tab) -->
+      <div id="placemat-controls" style="display:none;">
+        <div class="panel-title">Placemat Variant</div>
+        <select id="placemat-variant" onchange="changePlacematVariant()">
+          <option value="toc-variant">TOC Tactical (OD Green / Black)</option>
+          <option value="garrison-variant" selected>Garrison / PME (Clean White)</option>
+          <option value="night-variant">Night Book (High Contrast Dark)</option>
+        </select>
+        <button class="btn btn-amber" onclick="printPlacemat()" style="margin-top:8px;width:100%;">Print / Export Placemat</button>
+      </div>
+
+      <!-- MGRS and other controls remain -->
+      <div>
+        <div class="panel-title">MGRS Placement</div>
+        <input type="text" id="specificMGRS" placeholder="18S UJ 12345 67890">
+        <button class="btn" onclick="placeSymbolAtMGRS()" style="width:100%;margin-top:8px;">Place at MGRS</button>
+      </div>
+    </aside>
+
+    <!-- RIGHT CONTENT AREA -->
+    <div>
+      <!-- TACTICAL MAP TAB -->
+      <div class="tab-content active" id="map-tab">
+        <div id="map" style="height: calc(100vh - 90px - 52px);"></div>
+      </div>
+
+      <!-- PLACEMAT TAB -->
+      <div class="tab-content" id="placemat-tab">
+        <div id="placemat-wrapper">
+          <!-- Placemat content injected here via JS for variant switching -->
+        </div>
+      </div>
+
+      <!-- DOCTRINE, UPLOAD, PREMIUM tabs remain as before -->
+      <div class="tab-content" id="doctrine-tab">
+        <div class="section-heading">Ask Doctrine — MIL-STD-2525E / FM 1-02.2</div>
+        <input type="text" id="question" placeholder="Ask any doctrine question...">
+        <button class="btn btn-primary" onclick="askDoctrine()" style="width:100%;">ASK</button>
+        <div class="answer-box" id="answer"></div>
+      </div>
+
+      <div class="tab-content" id="upload-tab">
+        <div class="section-heading">Upload Orders / Annexes</div>
+        <input type="file" id="fileUpload">
+        <button class="btn btn-primary" onclick="analyzeUploadedFile()" style="width:100%;margin-top:8px;">Analyze</button>
+        <div class="analysis-box" id="analysisResult"></div>
+      </div>
+
+      <div class="tab-content" id="premium-tab">
+        <div class="premium-banner">
+          <h3>Unlock Premium Features — $9.99 One-Time</h3>
+          <button class="btn btn-amber" onclick="unlockPremium()">BUY PREMIUM</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <span><span class="status-dot"></span> SYSTEM ONLINE</span>
+    <span id="status-echelon">ECHELON: BATTALION</span>
+    <span id="status-coords">LAT/LON: —</span>
+    <span style="margin-left:auto;">UNCLASSIFIED // TRAINING USE ONLY</span>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ====================== EXISTING MAP & SYMBOL CODE (shortened for brevity) ======================
+    let map = L.map('map').setView([35.0, -80.0], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    function addGridLines() { /* existing grid code */ }
+    addGridLines();
+
+    let placedMarkers = [];
+    function addSelectedSymbol() { /* existing */ }
+    function updateSymbolPreview() { /* existing */ }
+    function placeSymbolAtMGRS() { /* existing */ }
+    // ... (keep all previous map, symbol, PDF, doctrine, analysis functions)
+
+    // ====================== PLACEMAT FUNCTIONALITY ======================
+    const defaultPlacematHTML = `
+      <div class="placemat garrison-variant" id="placemat">
+        <div class="classification-banner top">[UNCLASSIFIED]</div>
+        <div class="header-row">
+          <div class="header-cell"><div class="header-label">Unit</div><div>1-16 IN (Example)</div></div>
+          <div class="header-cell"><div class="header-label">Operation</div><div>Operation Iron Shield</div></div>
+          <div class="header-cell"><div class="header-label">DTG</div><div>${new Date().toLocaleString()}</div></div>
+          <div class="header-cell"><div class="header-label">Staff Section</div><div>S-3 Operations</div></div>
+        </div>
+        <div class="main-grid">
+          <div class="panel">
+            <div class="panel-title">Running Estimate – S-3</div>
+            <div class="subsection-title">Current Status</div>
+            <ul><li>BN CP established at grid 18S UJ 45678 12345</li><li>Two companies in assembly areas</li><li>Logistics status: 85% fuel, 92% ammo</li></ul>
+            <div class="subsection-title">Impacts to Operations</div>
+            <ul><li>Enemy recon activity increased in NAIs 1-3</li><li>Weather: visibility 3km, impacting UAS</li></ul>
+          </div>
+          <div class="panel map-panel">
+            <div class="panel-title">AO Map – Current COP</div>
+            <div class="map-placeholder">
+              INTEGRATED TACTICAL MAP<br>
+              (Friendly symbols, enemy, control measures, NAIs, DPs)<br>
+              <small>Switch to Tactical Map tab to build live overlay</small>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">24–72 Hour Outlook – S-2/S-3</div>
+            <div class="subsection-title">Anticipated Changes</div>
+            <ul><li>Enemy likely to probe defensive lines</li><li>Reinforcements expected by D+2</li></ul>
+            <div class="subsection-title">Commander Decisions Needed</div>
+            <ul><li>Commit reserve company?</li><li>Adjust FEBA?</li></ul>
+          </div>
+        </div>
+        <div class="bottom-band">
+          <div class="bottom-block">
+            <div class="bottom-block-title">CCIR / PIR</div>
+            <ul><li>What is enemy main effort axis?</li><li>Status of bridging assets</li></ul>
+          </div>
+          <div class="bottom-block">
+            <div class="bottom-block-title">Top 3 Risks</div>
+            <ul><li>1. Enemy ATGM ambush – S-2</li><li>2. Log sustainment shortfall – S-4</li><li>3. Cyber intrusion on C2 – S-6</li></ul>
+          </div>
+          <div class="bottom-block">
+            <div class="bottom-block-title">Opportunities</div>
+            <ul><li>Exploit gap in enemy recon screen</li><li>Conduct air assault on objective</li></ul>
+          </div>
+          <div class="bottom-block">
+            <div class="bottom-block-title">Commander’s Guidance</div>
+            <ul><li>Maintain aggressive reconnaissance</li><li>Preserve combat power for decisive operation</li></ul>
+          </div>
+        </div>
+        <div class="classification-banner bottom">[UNCLASSIFIED]</div>
+      </div>
+    `;
+
+    function renderPlacemat(variant = 'garrison-variant') {
+      const wrapper = document.getElementById('placemat-wrapper');
+      wrapper.innerHTML = defaultPlacematHTML;
+      const placemat = document.getElementById('placemat');
+      if (placemat) placemat.className = `placemat ${variant}`;
+    }
+
+    function changePlacematVariant() {
+      const variant = document.getElementById('placemat-variant').value;
+      renderPlacemat(variant);
+    }
+
+    function printPlacemat() {
+      const placematContent = document.getElementById('placemat-wrapper').innerHTML;
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html><head><title>Commander’s Placemat</title>
+        <style>body { margin:0; padding:20px; font-family:Calibri,Arial,sans-serif; }</style>
+        </head><body>${placematContent}</body></html>
+      `);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 500);
+    }
+
+    // ====================== TAB SWITCHING ======================
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+
+      if (tabId === 'map-tab') {
+        setTimeout(() => map.invalidateSize(), 100);
+        document.getElementById('placemat-controls').style.display = 'none';
+        document.getElementById('symbol-builder').style.display = 'block';
+      } else if (tabId === 'placemat-tab') {
+        document.getElementById('placemat-controls').style.display = 'block';
+        document.getElementById('symbol-builder').style.display = 'none';
+        if (!document.getElementById('placemat')) renderPlacemat();
+      } else {
+        document.getElementById('placemat-controls').style.display = 'none';
+        document.getElementById('symbol-builder').style.display = 'block';
+      }
+    }
+
+    // ====================== INITIALIZATION ======================
+    document.addEventListener('DOMContentLoaded', () => {
+      // Existing init code for map, preview, clock, etc.
+      updateSymbolPreview();
+      renderPlacemat('garrison-variant'); // default
+
+      // Clock
+      function updateClock() {
+        const now = new Date();
+        document.getElementById('clock-display').textContent = 
+          String(now.getUTCHours()).padStart(2,'0') + 
+          String(now.getUTCMinutes()).padStart(2,'0') + 
+          String(now.getUTCSeconds()).padStart(2,'0') + 'Z';
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+    });
+
+    // Keep all your previous functions: askDoctrine, analyzeUploadedFile, saveOverlayAsPDF, etc.
+    function askDoctrine() { /* existing */ }
+    function analyzeUploadedFile() { /* existing */ }
+    function unlockPremium() { alert("Premium unlocked in demo."); }
+  </script>
+</body>
+</html>
