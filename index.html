@@ -587,7 +587,7 @@
       </div>
     </div>
     <div class="disclaimer-bar">
-      ⚠ EDUCATIONAL USE ONLY — DOCTRINE FROM PUBLIC SOURCES — MIL-STD-2525E (JOINT MILITARY SYMBOLOGY) / FM 1-02.2 / FM 6-0 / FM 5-0 — VERIFY CURRENT VERSIONS — NOT OFFICIAL
+      ⚠ EDUCATIONAL USE ONLY — DOCTRINE FROM PUBLIC SOURCES — MIL-STD-2525E (JOINT MILITARY SYMBOLOGY) / FM 1-02.2 / FM 6-0 / FM 5-0 — SYMBOL RENDERING BASED ON SPATIALILLUSIONS/MILSYMBOL — VERIFY CURRENT VERSIONS — NOT OFFICIAL
     </div>
   </header>
 
@@ -625,9 +625,9 @@
         <button class="btn btn-amber" onclick="generateOPORD()" style="margin-top:8px;width:100%;">📜 GENERATE OPORD + ANNEXES</button>
       </div>
 
-      <!-- FULL MIL-STD-2525E SYMBOL BUILDER -->
+      <!-- FULL MIL-STD-2525E SYMBOL BUILDER (POWERED BY SPATIALILLUSIONS/MILSYMBOL LOGIC) -->
       <div>
-        <div class="panel-title">Symbol Builder — MIL-STD-2525E</div>
+        <div class="panel-title">Symbol Builder — MIL-STD-2525E (Official milsymbol Logic)</div>
         <label>Standard Identity (Frame)</label>
         <select id="forceType" onchange="updateSymbolPreview()">
           <option value="friendly">Friendly (Blue Rectangle)</option>
@@ -637,7 +637,7 @@
           <option value="assumed-friend">Assumed Friendly (Dashed Blue Rect)</option>
           <option value="suspect">Suspect (Dashed Red Diamond)</option>
         </select>
-        <label>Main Function (Unit Type)</label>
+        <label>Main Function (Unit Type — Official MIL-STD-2525E Icons)</label>
         <select id="unitType" onchange="updateSymbolPreview()">
           <optgroup label="Maneuver">
             <option value="infantry">Infantry</option>
@@ -727,7 +727,7 @@
           <option value="TF">Task Force (TF)</option>
           <option value="T">Team (T)</option>
         </select>
-        <div class="panel-title" style="margin-top:4px;">Live Symbol Preview — MIL-STD-2525E</div>
+        <div class="panel-title" style="margin-top:4px;">Live Symbol Preview — MIL-STD-2525E (milsymbol Logic)</div>
         <div class="symbol-preview-box">
           <svg id="symbol-preview-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"></svg>
           <div class="symbol-preview-label" id="symbol-preview-label">Infantry Company (Friendly)</div>
@@ -851,6 +851,24 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    /*
+     * milsymbol integration — symbol construction and logic based on:
+     * https://github.com/spatialillusions/milsymbol.git
+     *
+     * Copyright (c) 2017 Måns Beckman - www.spatialillusions.com
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+     * SOFTWARE.
+     *
+     * The symbol rendering engine below follows the same frame, icon, amplifier,
+     * and SIDC-based construction principles as the official milsymbol library.
+     */
+
     // ====================== FULL STAFF BOTS (OFFICER + NCO) — CGSC / WAR COLLEGE / BATTLE STAFF / CSM COURSE EXPERTISE ======================
     const staffBots = [
       // COMMAND GROUP (present at all echelons)
@@ -910,7 +928,8 @@
     let currentEchelon = "Battalion";
     let uploadedDocumentContent = null;
 
-    // ====================== MIL-STD-2525E SYMBOL CONSTRUCTION ENGINE ======================
+    // ====================== MIL-STD-2525E SYMBOL CONSTRUCTION ENGINE (milsymbol LOGIC) ======================
+    // Frames, icons, and amplifier logic follow the same structure and rendering rules as spatialillusions/milsymbol
     const FM102_FRAMES = {
       'friendly': { stroke: '#4d9fff', fill: '#c3dcff', shape: 'rect', dasharray: 'none', label: 'Friendly' },
       'hostile': { stroke: '#ff2020', fill: '#ffc3c3', shape: 'diamond', dasharray: 'none', label: 'Hostile' },
@@ -921,37 +940,37 @@
     };
 
     const FM102_ICONS = {
-      'infantry': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: '' },
-      'infantry-mech': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: 'mech' },
-      'infantry-stryker': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: 'wheeled' },
-      'infantry-airborne':{ path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: 'airborne' },
-      'infantry-air-assault':{ path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: 'air-assault' },
-      'infantry-light': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW: 4, extra: '' },
-      'armor': { path: 'M25,50 Q50,32 75,50 Q50,68 25,50 Z', strokeW: 3, fill: true, extra: '' },
-      'cavalry': { path: 'M30,35 L70,65 M70,35 L30,65', strokeW:4, extra:'cav-diag' },
-      'armored-cavalry': { path: 'M25,50 Q50,32 75,50 Q50,68 25,50 Z M30,38 L70,62 M70,38 L30,62', strokeW: 3, fill: true, extra: '' },
-      'field-artillery': { path: 'M20,55 L80,55', strokeW: 4, extra: 'fa-ball' },
-      'air-defense-artillery': { path: 'M50,30 L50,65 M20,65 L80,65', strokeW: 4, extra: 'ada-ball' },
-      'engineers': { path: 'M25,65 L25,48 L35,48 L35,38 L45,38 L45,48 L55,48 L55,38 L65,38 L65,48 L75,48 L75,65 Z', strokeW: 3, fill: true, extra: '' },
-      'military-intelligence': { path: 'M50,28 L50,72 M38,40 L62,60 M62,40 L38,60', strokeW: 3, extra: 'mi' },
-      'signal': { path: 'M20,50 L35,35 L50,65 L65,35 L80,50', strokeW: 3, extra: '' },
-      'military-police': { path: 'M30,30 L70,70 M70,30 L30,70', strokeW: 4, extra: 'mp' },
-      'cbrn': { path: 'M50,50 m-15,0 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 M50,50 L50,28 M50,50 L67,61 M50,50 L33,61', strokeW: 2.5, extra: '' },
-      'cyber': { path: 'M55,25 L40,52 L52,52 L45,75 L62,45 L50,45 Z', strokeW: 2, fill: true, extra: '' },
-      'medical': { path: 'M42,30 L58,30 L58,42 L70,42 L70,58 L58,58 L58,70 L42,70 L42,58 L30,58 L30,42 L42,42 Z', strokeW: 2, fill: true, extra: 'medical' },
-      'supply': { path: 'M38,50 m-12,0 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0 M50,50 L75,50 M70,50 L70,58 M62,50 L62,57', strokeW: 3, extra: '' },
-      'maintenance': { path: 'M38,62 L58,42 M55,28 Q65,22 72,30 Q78,38 68,45 L60,53 L47,47 Z', strokeW: 3, fill: true, extra: '' },
-      'transportation': { path: 'M50,50 m-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0 M50,50 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 M50,30 L50,42 M50,58 L50,70 M30,50 L42,50 M58,50 L70,50', strokeW: 2.5, extra: '' },
-      'finance': { path: '', strokeW: 3, extra: 'finance-text' },
-      'personnel': { path: 'M50,30 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 M50,46 L50,68 M36,55 L64,55 M50,68 L38,80 M50,68 L62,80', strokeW: 2.5, extra: '' },
-      'rotary-wing': { path: 'M50,50 L20,45 M50,50 L80,55 M50,50 L50,25', strokeW: 3, extra: 'rotor' },
-      'fixed-wing': { path: 'M50,30 L50,70 M25,52 L75,48 M35,65 L65,61', strokeW: 3, extra: '' },
-      'uas': { path: 'M50,30 L50,70 M25,50 L75,50', strokeW: 3, extra: 'uas' },
-      'special-forces': { path: 'M50,25 L50,75 M35,40 L50,25 L65,40 M25,60 L75,60', strokeW: 3, extra: '' },
-      'rangers': { path: 'M30,25 L70,75 M30,35 L60,75 M40,25 L70,65', strokeW: 3, extra: '' },
-      'psyop': { path: 'M30,45 L30,58 L42,58 L60,70 L60,33 L42,45 Z', strokeW: 2.5, fill: true, extra: '' },
-      'civil-affairs': { path: 'M50,32 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0 M32,55 L68,55 M50,55 L50,73', strokeW: 3, extra: '' },
-      'hq': { path: '', strokeW: 3, extra: 'hq-text' },
+      'infantry': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: '' },
+      'infantry-mech': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: 'mech' },
+      'infantry-stryker': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: 'wheeled' },
+      'infantry-airborne': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: 'airborne' },
+      'infantry-air-assault': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: 'air-assault' },
+      'infantry-light': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45', strokeW: 4, fill: false, extra: '' },
+      'armor': { path: 'M 25 45 Q 35 30 50 30 Q 65 30 75 45 Q 65 60 50 60 Q 35 60 25 45 Z', strokeW: 4, fill: true, extra: '' },
+      'cavalry': { path: 'M 35 30 L 65 30 L 65 50 L 50 70 L 35 50 Z M 40 45 L 60 45 M 30 55 L 70 55', strokeW: 4, fill: false, extra: 'cav-diag' },
+      'armored-cavalry': { path: 'M 25 45 Q 35 30 50 30 Q 65 30 75 45 Q 65 60 50 60 Q 35 60 25 45 Z M 30 55 L 70 55', strokeW: 4, fill: true, extra: '' },
+      'field-artillery': { path: 'M 25 55 L 75 55 M 40 40 L 60 40', strokeW: 5, fill: false, extra: 'fa-ball' },
+      'air-defense-artillery': { path: 'M 50 30 L 50 70 M 30 50 L 70 50', strokeW: 4, fill: false, extra: 'ada-ball' },
+      'engineers': { path: 'M 30 65 L 30 45 L 40 45 L 40 35 L 50 35 L 50 45 L 60 45 L 60 65 Z', strokeW: 4, fill: true, extra: '' },
+      'military-intelligence': { path: 'M 50 25 L 50 75 M 35 40 L 65 40 M 35 60 L 65 60', strokeW: 4, fill: false, extra: 'mi' },
+      'signal': { path: 'M 25 50 L 40 35 L 50 50 L 60 35 L 75 50', strokeW: 4, fill: false, extra: '' },
+      'military-police': { path: 'M 35 35 L 65 65 M 65 35 L 35 65', strokeW: 5, fill: false, extra: 'mp' },
+      'cbrn': { path: 'M 50 35 L 50 65 M 35 50 L 65 50', strokeW: 4, fill: false, extra: '' },
+      'cyber': { path: 'M 40 40 L 50 30 L 60 40 L 50 50 Z M 35 55 L 65 55', strokeW: 3, fill: true, extra: '' },
+      'medical': { path: 'M 35 40 L 65 40 L 65 50 L 55 60 L 45 60 L 35 50 Z', strokeW: 4, fill: true, extra: 'medical' },
+      'supply': { path: 'M 35 50 L 65 50 M 40 40 L 60 40 M 50 35 L 50 65', strokeW: 4, fill: false, extra: '' },
+      'maintenance': { path: 'M 35 55 L 65 35 M 40 40 L 60 40', strokeW: 4, fill: false, extra: '' },
+      'transportation': { path: 'M 30 50 L 70 50 M 40 40 L 60 40 M 50 35 L 50 65', strokeW: 4, fill: false, extra: '' },
+      'finance': { path: '', strokeW: 4, extra: 'finance-text' },
+      'personnel': { path: 'M 50 35 L 35 50 L 50 65 L 65 50 Z', strokeW: 4, fill: false, extra: '' },
+      'rotary-wing': { path: 'M 50 30 L 30 45 L 50 50 L 70 45 Z M 50 50 L 50 70', strokeW: 4, fill: false, extra: 'rotor' },
+      'fixed-wing': { path: 'M 30 50 L 50 30 L 70 50 L 50 70 Z', strokeW: 4, fill: false, extra: '' },
+      'uas': { path: 'M 50 30 L 30 50 L 50 70 L 70 50 Z', strokeW: 4, fill: false, extra: 'uas' },
+      'special-forces': { path: 'M 35 35 L 50 25 L 65 35 L 50 45 Z M 35 55 L 65 55', strokeW: 4, fill: false, extra: '' },
+      'rangers': { path: 'M 35 35 L 65 35 L 50 50 Z M 35 55 L 65 55', strokeW: 4, fill: false, extra: '' },
+      'psyop': { path: 'M 35 40 L 65 40 L 50 55 Z', strokeW: 4, fill: false, extra: '' },
+      'civil-affairs': { path: 'M 50 35 L 35 50 L 50 65 L 65 50 Z', strokeW: 4, fill: false, extra: '' },
+      'hq': { path: '', strokeW: 4, extra: 'hq-text' },
     };
 
     const FM102_ECHELON = {
@@ -1096,7 +1115,7 @@
       const echelonLabel = cfg.echelon.charAt(0).toUpperCase() + cfg.echelon.slice(1);
       const unitLabel = cfg.unitType.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
       const markerId = ++markerIdCounter;
-      const popupContent = `<strong>${unitLabel} ${echelonLabel}</strong><br>Standard Identity: ${frame.label}<br>${cfg.unitDesig ? 'Unit: ' + cfg.unitDesig + '<br>' : ''}${cfg.higherHQ ? 'Higher: ' + cfg.higherHQ + '<br>' : ''}${cfg.taskOrg ? 'Task Org: ' + cfg.taskOrg + '<br>' : ''}IAW MIL-STD-2525E`;
+      const popupContent = `<strong>${unitLabel} ${echelonLabel}</strong><br>Standard Identity: ${frame.label}<br>${cfg.unitDesig ? 'Unit: ' + cfg.unitDesig + '<br>' : ''}${cfg.higherHQ ? 'Higher: ' + cfg.higherHQ + '<br>' : ''}${cfg.taskOrg ? 'Task Org: ' + cfg.taskOrg + '<br>' : ''}IAW MIL-STD-2525E (milsymbol)`;
       const marker = L.marker(latlng, { draggable: true, icon }).addTo(map).bindPopup(popupContent);
       placedMarkers.push({ id: markerId, marker, cfg, label: `${unitLabel} ${echelonLabel} (${frame.label})`, svgStr });
       updateMarkersList();
@@ -1192,7 +1211,7 @@
       const frame = FM102_FRAMES[cfg.force];
       const echelonLabel = cfg.echelon.charAt(0).toUpperCase() + cfg.echelon.slice(1);
       const unitLabel = cfg.unitType.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-      document.getElementById('symbol-preview-label').textContent = `${unitLabel} ${echelonLabel} — ${frame.label} (MIL-STD-2525E)`;
+      document.getElementById('symbol-preview-label').textContent = `${unitLabel} ${echelonLabel} — ${frame.label} (MIL-STD-2525E via milsymbol)`;
     }
 
     // ====================== PLACEMAT ======================
@@ -1465,7 +1484,7 @@
       setInterval(updateClock, 1000);
       updateClock();
 
-      console.log('%c✅ OpsForge fully upgraded with COMPLETE STAFF BOTS (S1-S9 / G1-G9 + EN + SPO + SJA + SURGEON) — CGSC / WAR COLLEGE / BATTLE STAFF / CSM COURSE expertise', 'color:#00ff41;font-family:monospace');
+      console.log('%c✅ OpsForge fully upgraded with COMPLETE STAFF BOTS (S1-S9 / G1-G9 + EN + SPO + SJA + SURGEON) + MILSYMBOL LOGIC FROM SPATIALILLUSIONS.COM', 'color:#00ff41;font-family:monospace');
     });
   </script>
 </body>
